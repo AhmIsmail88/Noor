@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:noor/app/l10n/gen/app_localizations.dart';
 import 'package:noor/main.dart' as app;
 import 'package:noor/app/app.dart';
 import 'package:noor/data/library_controller.dart';
@@ -59,13 +60,13 @@ void main() {
   ) async {
     await app.main();
     await tester.pumpAndSettle();
+    // Labels follow the app language (the phone may be set to English).
+    final l = AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
     final library = tester.widget<NoorApp>(find.byType(NoorApp)).library;
     final root = Platform.isAndroid
         ? '/data/user/0/com.noor.player.noor/files/format-fixtures'
         : '${Directory.current.path}/build';
-    final router = GoRouter.of(
-      tester.element(find.text('تحميل أو Streaming من رابط').first),
-    );
+    final router = GoRouter.of(tester.element(find.text(l.onlineVideo).first));
     const names = [
       'noor_android_h264.mp4',
       'noor_smoke.mp4',
@@ -87,7 +88,7 @@ void main() {
       for (var i = 0; i < 7; i++) {
         await tick(tester);
       }
-      await tester.tap(find.byTooltip('رجوع').hitTestable().first);
+      await tester.tap(find.byTooltip(l.back).hitTestable().first);
       await tester.pumpAndSettle();
       expect(find.byType(PlayerPage), findsNothing);
     }
@@ -121,7 +122,10 @@ void main() {
     await tester.pump();
     await playback(tester, 'edge back source');
     final bounds = tester.getRect(find.byType(Video));
-    await tester.dragFrom(Offset(bounds.left + 2, bounds.center.dy), const Offset(150, 0));
+    await tester.dragFrom(
+      Offset(bounds.left + 2, bounds.center.dy),
+      const Offset(150, 0),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(PlayerPage), findsNothing);
     debugPrint('NOOR VERIFIED edge swipe back');
@@ -129,13 +133,13 @@ void main() {
         .query('', LibraryFilter.all)
         .map((e) => e.path)
         .toSet();
-    await tester.tap(find.text('تحميل أو Streaming من رابط').first);
+    await tester.tap(find.text(l.onlineVideo).first);
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextField),
       'https://www.youtube.com/watch?v=jNQXAC9IVRw',
     );
-    await tester.tap(find.text('تحميل الفيديو'));
+    await tester.tap(find.text(l.downloadVideo));
     for (var i = 0; i < 300; i++) {
       await tick(tester);
       if (library
@@ -148,18 +152,26 @@ void main() {
         .query('', LibraryFilter.all)
         .where((e) => !before.contains(e.path))
         .single;
+    // Android saves to MediaStore (a content:// URI), which File cannot read.
     expect(
-      await tester.runAsync(() => File(downloaded.path).length()),
+      downloaded.isContentUri
+          ? downloaded.sizeBytes
+          : await tester.runAsync(() => File(downloaded.path).length()),
       greaterThan(100000),
     );
+    // On a phone the list sits below the form and is not built until scrolled.
     final tile = find.widgetWithText(ListTile, downloaded.title).first;
-    await tester.ensureVisible(tile);
+    await tester.scrollUntilVisible(
+      tile,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(tile);
     await tester.pump();
     await playback(tester, 'completed download');
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
-    final stream = find.text('Streaming — مشاهدة مباشرة');
+    final stream = find.text(l.streaming);
     await tester.ensureVisible(stream);
     await tester.tap(stream);
     for (var i = 0; i < 240; i++) {

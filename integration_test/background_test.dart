@@ -132,16 +132,22 @@ void main() {
           // A recoverable engine error must not detach the video texture while
           // playback continues, and retry must retain the streaming position.
           final element = tester.element(find.byType(Video));
-          player.platform!.errorController.add('Injected transient network error');
+          player.platform!.errorController.add(
+            'Injected transient network error',
+          );
           await tick();
           expect(find.byType(Video), findsOneWidget);
           expect(tester.element(find.byType(Video)), same(element));
           final retryPosition = player.state.position;
           await tester.tap(find.text('إعادة المحاولة'));
-          await until(() => player.state.playing &&
-              player.state.position >= retryPosition);
+          await until(
+            () =>
+                player.state.playing && player.state.position >= retryPosition,
+          );
           expect(player.state.position.inSeconds, greaterThan(12));
-          debugPrint('NOOR_TEST_STREAM_ERROR_RETRY_OK ${player.state.position}');
+          debugPrint(
+            'NOOR_TEST_STREAM_ERROR_RETRY_OK ${player.state.position}',
+          );
         }
         await tick(4);
         router.pop();

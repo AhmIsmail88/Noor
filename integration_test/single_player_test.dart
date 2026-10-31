@@ -30,7 +30,9 @@ Future<Player> playing(WidgetTester tester, String path) async {
     final pages = find.byType(PlayerPage);
     if (pages.evaluate().isEmpty) continue;
     if (tester.widget<PlayerPage>(pages.last).path != path) continue;
-    final player = tester.widget<Video>(find.byType(Video).last).controller
+    final player = tester
+        .widget<Video>(find.byType(Video).last)
+        .controller
         .player;
     if (player.state.playing && player.state.position.inMilliseconds > 700) {
       return player;
@@ -47,7 +49,9 @@ void main() {
     await app.main();
     await tester.pumpAndSettle();
     final library = tester.widget<NoorApp>(find.byType(NoorApp)).library;
-    final root = '${Directory.current.path}/build';
+    final root = Platform.isAndroid
+        ? '/data/user/0/com.noor.player.noor/files/format-fixtures'
+        : '${Directory.current.path}/build';
     final first = '$root/noor_smoke.mp4';
     final second = '$root/noor_format_h264.mkv';
     final third = '$root/noor_format_vp9.webm';

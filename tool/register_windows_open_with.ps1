@@ -1,10 +1,10 @@
-param([string]$Executable = (Join-Path $PSScriptRoot '../build/windows/x64/runner/Release/noor.exe'))
+param([string]$Executable = (Join-Path $PSScriptRoot '../build/windows/x64/runner/Release/Noor.exe'))
 $ErrorActionPreference = 'Stop'
 $noorExe = (Resolve-Path -LiteralPath $Executable).Path
-if ([IO.Path]::GetFileName($noorExe) -ne 'noor.exe') { throw 'Select the built NOOR executable.' }
+if ([IO.Path]::GetFileName($noorExe) -ne 'Noor.exe') { throw 'Select the built Noor executable.' }
 # Per-user Open With registration. Does not replace any default player/UserChoice.
 $noorClasses = 'HKCU:\Software\Classes'
-$noorApplication = Join-Path $noorClasses 'Applications\noor.exe'
+$noorApplication = Join-Path $noorClasses 'Applications\Noor.exe'
 New-Item -Path "$noorApplication\shell\open\command" -Force | Out-Null
 Set-Item -Path "$noorApplication\shell\open\command" -Value ('"' + $noorExe + '" "%1"')
 New-ItemProperty -Path $noorApplication -Name FriendlyAppName -Value 'NOOR' -PropertyType String -Force | Out-Null

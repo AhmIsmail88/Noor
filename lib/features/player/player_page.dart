@@ -350,7 +350,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
         'title':
             widget.onlineSource?.title ??
             widget.library.findByPath(widget.path)?.title ??
-            'NOOR',
+            'Noor',
         'playing': _player.state.playing,
         'position': _player.state.position.inMilliseconds,
         'duration': _player.state.duration.inMilliseconds,

@@ -25,7 +25,7 @@ class MainActivity : FlutterActivity() {
                 "update" -> {
                     if (android.os.Build.VERSION.SDK_INT >= 26) {
                         val intent = android.content.Intent(appContext, PlaybackService::class.java)
-                            .putExtra("title", call.argument<String>("title") ?: "NOOR")
+                            .putExtra("title", call.argument<String>("title") ?: "Noor")
                             .putExtra("playing", call.argument<Boolean>("playing") ?: false)
                             .putExtra("position", (call.argument<Number>("position") ?: 0).toLong())
                             .putExtra("duration", (call.argument<Number>("duration") ?: 0).toLong())

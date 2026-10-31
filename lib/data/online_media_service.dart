@@ -519,7 +519,7 @@ class OnlineMediaService extends ChangeNotifier {
     await _desktopChannel.invokeMethod<void>('update', {
       'active': hasTransfer,
       'paused': canResume,
-      'text': 'NOOR — ${stage.name} ${((progress ?? 0) * 100).round()}%',
+      'text': 'Noor — ${stage.name} ${((progress ?? 0) * 100).round()}%',
     });
   }
 

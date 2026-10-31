@@ -20,7 +20,7 @@ public final class PlaybackService extends Service {
     private boolean playing;
     private boolean focused;
     private PowerManager.WakeLock wake;
-    private String title = "NOOR";
+    private String title = "Noor";
     private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {
         if (change < 0) command("pause");
     };
@@ -38,7 +38,7 @@ public final class PlaybackService extends Service {
             .setOnAudioFocusChangeListener(focusListener).build();
         wake = ((PowerManager)getSystemService(POWER_SERVICE)).newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK, "noor:playback");
-        session = new MediaSession(this, "NOOR");
+        session = new MediaSession(this, "Noor");
         session.setCallback(new MediaSession.Callback() {
             @Override public void onPlay() { command("play"); }
             @Override public void onPause() { command("pause"); }
@@ -73,7 +73,7 @@ public final class PlaybackService extends Service {
         PendingIntent open = PendingIntent.getActivity(this, 0, getPackageManager().getLaunchIntentForPackage(getPackageName()),
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification notification = new Notification.Builder(this, "noor-playback")
-            .setSmallIcon(R.drawable.ic_noor_notification).setContentTitle(title).setContentText("NOOR")
+            .setSmallIcon(R.drawable.ic_noor_notification).setContentTitle(title).setContentText("Noor")
             .setContentIntent(open).setOnlyAlertOnce(true).setOngoing(playing)
             .addAction(new Notification.Action.Builder(null, playing ? "إيقاف مؤقت" : "تشغيل", action(playing ? "pause" : "play", 10)).build())
             .addAction(new Notification.Action.Builder(null, "إغلاق", action("stop", 11)).build())

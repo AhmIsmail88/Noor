@@ -9,7 +9,7 @@ class NoorMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'NOOR',
+    label: 'Noor',
     child: CustomPaint(
       size: Size.square(size),
       painter: _MarkPainter(withBackground),

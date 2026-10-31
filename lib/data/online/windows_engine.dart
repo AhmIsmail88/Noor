@@ -9,7 +9,7 @@ import 'links.dart';
 /// Progress parsed from the engine's output; see [parseProgressLine].
 typedef EngineProgress = ({double fraction, double? speed, Duration? eta});
 
-/// The bundled yt-dlp.exe (with node.exe and ffmpeg.exe) next to noor.exe.
+/// The bundled yt-dlp.exe (with node.exe and ffmpeg.exe) next to Noor.exe.
 /// Runs one process at a time; the caller owns transfer state and passes
 /// in what the engine needs to know about it.
 class WindowsEngine {

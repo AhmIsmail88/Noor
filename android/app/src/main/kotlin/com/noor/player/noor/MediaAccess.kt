@@ -42,7 +42,7 @@ class MediaAccess(private val activity: Activity, messenger: BinaryMessenger) {
             if (intent.flags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION != 0)
                 resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         } catch (_: SecurityException) { /* Open-with may grant temporary read access only. */ }
-        var name = uri.lastPathSegment ?: "NOOR"
+        var name = uri.lastPathSegment ?: "Noor"
         var size = 0L
         resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use {
             if (it.moveToFirst()) { name = it.getString(0) ?: name; size = it.getLong(1) }

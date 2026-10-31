@@ -88,7 +88,7 @@ public final class DownloadService extends Service {
             default -> "جارٍ التحميل " + percent + "%";
         };
         Notification.Builder b = new Notification.Builder(this, "noor-downloads")
-            .setSmallIcon(R.drawable.ic_noor_notification).setContentTitle("NOOR")
+            .setSmallIcon(R.drawable.ic_noor_notification).setContentTitle("Noor")
             .setContentText(text).setOnlyAlertOnce(true).setOngoing(!paused && !done)
             .setContentIntent(PendingIntent.getActivity(this, 0, getPackageManager().getLaunchIntentForPackage(getPackageName()),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));

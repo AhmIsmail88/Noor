@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.noor.player" "\0"
-            VALUE "FileDescription", "noor" "\0"
+            VALUE "FileDescription", "Noor" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "noor" "\0"
+            VALUE "InternalName", "Noor" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.noor.player. All rights reserved." "\0"
-            VALUE "OriginalFilename", "noor.exe" "\0"
-            VALUE "ProductName", "noor" "\0"
+            VALUE "OriginalFilename", "Noor.exe" "\0"
+            VALUE "ProductName", "Noor" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

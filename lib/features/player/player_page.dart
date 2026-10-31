@@ -295,7 +295,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   /// Called when a newer player opens: keep the position, stop the sound.
   void _yieldPlayback() {
     if (_disposed) return;
-    _saveProgress();
+    // Runs inside the new page's initState (a build); notify afterwards.
+    _saveProgress(inDispose: true);
+    Future.microtask(widget.library.refresh);
     unawaited(widget.library.flush());
     unawaited(_player.pause());
   }

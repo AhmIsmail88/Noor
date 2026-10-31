@@ -71,13 +71,14 @@ public final class DownloadService extends Service {
     private Notification notification() {
         String state = job == null ? "preparing" : job.optString("state");
         boolean paused = state.equals("paused") || state.equals("failed");
-        boolean done = state.equals("completed") || state.equals("cancelled");
+        boolean done = state.equals("completed") || state.equals("cancelled") || state.equals("rejected");
         int percent = job == null ? 0 : Math.max(0, Math.min(100, (int)job.optDouble("progress", 0)));
         String text = switch(state) {
             case "paused" -> "التحميل متوقف مؤقتًا";
             case "waiting" -> "انتظار الاتصال — ستتم إعادة المحاولة";
             case "completed" -> "اكتمل الحفظ في Download/NOOR";
             case "failed" -> "تعذّر التحميل — يمكنك الاستكمال";
+            case "rejected" -> "تعذّر التحميل — راجع السبب في نور";
             case "cancelled" -> "تم إلغاء التحميل";
             case "publishing" -> "جارٍ حفظ الملف";
             default -> "جارٍ التحميل " + percent + "%";
@@ -102,7 +103,7 @@ public final class DownloadService extends Service {
             startForeground(4101, notification());
             String action = intent == null ? "jobResume" : intent.getAction();
             if ("jobStart".equals(action)) {
-                if (running || (!job.optString("state").matches("|completed|cancelled"))) return START_STICKY;
+                if (running || (!job.optString("state").matches("|completed|cancelled|rejected"))) return START_STICKY;
                 job = new JSONObject(intent.getStringExtra("arguments"));
                 File root = new File(getFilesDir(), "downloads"); root.mkdirs();
                 File dir = new File(root, "job-" + UUID.randomUUID());
@@ -116,7 +117,7 @@ public final class DownloadService extends Service {
                 engine.onMethodCall(new MethodCall("cancel", null), ignored());
                 if (!running) finish();
                 return START_NOT_STICKY;
-            } else if (job.optString("state").matches("completed|cancelled|")) {
+            } else if (job.optString("state").matches("completed|cancelled|rejected|")) {
                 finish(); return START_NOT_STICKY;
             } else if (intent == null && job.optString("state").equals("paused")) {
                 finish(); return START_NOT_STICKY;
@@ -178,7 +179,7 @@ public final class DownloadService extends Service {
         for (String reason : new String[]{"Unsupported URL", "is not a valid URL", "valid public web link",
                 "Private video", "Video unavailable", "This video is unavailable", "Sign in to confirm",
                 "requested format is not available", "larger than max-filesize", "Invalid quality",
-                "Invalid output directory"}) {
+                "Invalid output directory", "Requested resolution unavailable"}) {
             if (message.contains(reason)) return true;
         }
         return false;
@@ -210,11 +211,13 @@ public final class DownloadService extends Service {
         });
     }
     private void fail(String error) {
-        try { if (job != null) { job.put("error", error); state("failed"); } } catch (Exception ignored) {}
+        // A permanent failure is final ("rejected"): resuming cannot help, and a
+        // resumable "failed" job would block every new download in the UI.
+        try { if (job != null) { job.put("error", error); state(permanent(error) ? "rejected" : "failed"); } } catch (Exception ignored) {}
         stopping = true; finish();
     }
     private void finish() {
-        if (job != null && job.optString("state").matches("completed|cancelled")) {
+        if (job != null && job.optString("state").matches("completed|cancelled|rejected")) {
             try {
                 File dir = new File(job.getString("directory")).getCanonicalFile();
                 String root = new File(getFilesDir(), "downloads").getCanonicalPath() + File.separator;

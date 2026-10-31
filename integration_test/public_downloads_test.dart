@@ -78,7 +78,7 @@ void main() {
       await tester.ensureVisible(find.byType(TextField));
       await tester.enterText(
         find.byType(TextField),
-        'https://www.youtube.com/shorts/zqOyW5hmeAw',
+        'https://www.youtube.com/watch?v=jNQXAC9IVRw',
       );
       FocusScope.of(tester.element(find.byType(TextField))).unfocus();
       await tester.pumpAndSettle();

@@ -93,7 +93,9 @@ class OnlineMediaService extends ChangeNotifier {
   bool get hasTransfer =>
       _job != null &&
       _job!.containsKey('url') &&
-      !['completed', 'cancelled'].contains(_job!['state']);
+      // 'rejected' is a failure no retry can fix: it is final, and must not
+      // keep the Download button disabled the way a resumable failure does.
+      !['completed', 'cancelled', 'rejected'].contains(_job!['state']);
   bool get canResume =>
       hasTransfer && (_job?['state'] == 'paused' || _job?['state'] == 'failed');
   bool get canPause =>
@@ -218,7 +220,7 @@ class OnlineMediaService extends ChangeNotifier {
         'cancelled' => OnlineStage.cancelled,
         'paused' => OnlineStage.paused,
         'waiting' => OnlineStage.waiting,
-        'failed' => OnlineStage.failed,
+        'failed' || 'rejected' => OnlineStage.failed,
         'downloading' => OnlineStage.downloading,
         _ => OnlineStage.preparing,
       };
@@ -373,6 +375,8 @@ class OnlineMediaService extends ChangeNotifier {
               ? 'paused'
               : _cancelled
               ? 'cancelled'
+              : _isPermanent(e)
+              ? 'rejected'
               : 'failed';
           stage = _pausing
               ? OnlineStage.paused
@@ -426,6 +430,7 @@ class OnlineMediaService extends ChangeNotifier {
       'Sign in to confirm',
       'requested format is not available',
       'No video at or below',
+      'Requested resolution unavailable',
       'engine files are missing',
       'File is larger than max-filesize',
       'Invalid job directory',

@@ -133,7 +133,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextField),
-      'https://www.youtube.com/shorts/zqOyW5hmeAw',
+      'https://www.youtube.com/watch?v=jNQXAC9IVRw',
     );
     await tester.tap(find.text('تحميل الفيديو'));
     for (var i = 0; i < 300; i++) {

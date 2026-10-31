@@ -1,0 +1,108 @@
+{
+  "@@locale": "ar",
+  "appName": "نور",
+  "navHome": "الرئيسية",
+  "navLibrary": "المكتبة",
+  "navDownloads": "التحميلات",
+  "navSettings": "الإعدادات",
+  "welcome": "أهلاً بك في نور",
+  "openVideo": "فتح فيديو أو أكثر",
+  "onlineVideo": "تحميل أو Streaming من رابط",
+  "onlineHint": "الصق رابط فيديو ثم اختر التنزيل أو المشاهدة المباشرة. دعم يوتيوب وفيسبوك وتيك توك وإكس تجريبي، وكذلك روابط الفيديو المباشرة.",
+  "videoLink": "رابط الفيديو",
+  "pasteLink": "لصق الرابط",
+  "invalidLink": "أدخل رابط HTTP أو HTTPS صالحًا.",
+  "downloadVideo": "تحميل الفيديو",
+  "streaming": "Streaming — مشاهدة مباشرة",
+  "cancelAction": "إلغاء",
+  "onlineLimit": "حمّل المحتوى المسموح لك فقط. قد يمنع المصدر التنزيل أو Streaming. يمكن استكمال التنزيل المتوقف إذا كان المصدر يدعم ذلك.",
+  "downloadingVideo": "جارٍ تحميل الفيديو…",
+  "preparingLink": "جارٍ تجهيز الرابط… قد يستغرق الاستخدام الأول وقتًا أطول.",
+  "operationCancelled": "أُلغيت العملية.",
+  "onlineUnavailable": "تعذّر تنفيذ الطلب لهذا الرابط.",
+  "tryStreaming": "يمكنك تجربة Streaming للمشاهدة المباشرة، أو إعادة المحاولة. بعض المصادر لا تتيح أيًا منهما.",
+  "errorDetails": "تفاصيل السبب",
+  "completedDownloads": "التحميلات المكتملة",
+  "importingVideo": "جارٍ استيراد الفيديو…",
+  "importFailed": "تعذّر استيراد الفيديو. تأكد من توفر الملف ومساحة التخزين وحاول مجددًا.",
+  "libraryEmpty": "المكتبة فارغة حالياً",
+  "downloadsEmpty": "ملفاتك المحمّلة ستظهر هنا.",
+  "language": "اللغة",
+  "arabic": "العربية",
+  "english": "English",
+  "theme": "المظهر",
+  "themeDark": "داكن",
+  "themeLight": "فاتح",
+  "themeSystem": "النظام",
+  "playerError": "مشكلة أثناء التشغيل: {message}",
+  "@playerError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "play": "تشغيل",
+  "pause": "إيقاف مؤقت",
+  "seekBack": "رجوع 10 ثوانٍ",
+  "seekForward": "تقدّم 10 ثوانٍ",
+  "continueWatching": "تابع المشاهدة",
+  "filterAll": "الكل",
+  "filterFavorites": "المفضلة",
+  "filterRecent": "شُغّل مؤخراً",
+  "searchHint": "ابحث في المكتبة",
+  "noResults": "لا توجد نتائج",
+  "fileMissing": "الملف غير موجود",
+  "removeFromLibrary": "إزالة من المكتبة",
+  "addFavorite": "إضافة إلى المفضلة",
+  "removeFavorite": "إزالة من المفضلة",
+  "resumedAt": "تم الاستئناف من {time}",
+  "@resumedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "speed": "سرعة التشغيل",
+  "audioTrack": "المسار الصوتي",
+  "subtitles": "الترجمة",
+  "subtitlesOff": "إيقاف",
+  "trackN": "مسار {n}",
+  "@trackN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "fullscreen": "ملء الشاشة",
+  "exitFullscreen": "إنهاء ملء الشاشة",
+  "mute": "كتم الصوت",
+  "unmute": "إلغاء الكتم",
+  "volume": "مستوى الصوت",
+  "retry": "إعادة المحاولة",
+  "back": "رجوع",
+  "nextVideo": "الفيديو التالي",
+  "fileNotFound": "الملف غير موجود أو لم يعد متاحاً",
+  "downloadKind": "نوع التحميل",
+  "videoWithAudio": "فيديو مع الصوت",
+  "audioOnlyMp3": "صوت فقط (MP3)",
+  "audioQuality": "معدل الصوت",
+  "videoQuality": "أقصى دقة للفيديو",
+  "highestQuality": "أعلى جودة متاحة",
+  "audioFormatHint": "استخراج الصوت وحفظه كملف MP3.",
+  "videoQualityHint": "ينزّل أعلى دقة متاحة حتى اختيارك، بدون تكبير دقة المصدر.",
+  "downloadAudio": "تحميل الصوت",
+  "publicDownloadHint": "الحفظ في مجلد التنزيلات / NOOR على جهازك.",
+  "saveToPhoneDownloads": "حفظ في تنزيلات الهاتف",
+  "openDownloadsFolder": "فتح التنزيلات",
+  "folderOpenHint": "افتح مجلد Download/NOOR من مدير الملفات.",
+  "downloadSaved": "تم الحفظ في مجلد التنزيلات / NOOR",
+  "resumeDownload": "استكمال التحميل",
+  "downloadPaused": "التحميل متوقف مؤقتًا",
+  "downloadWaiting": "انتظار الاتصال - ستتم إعادة المحاولة",
+  "openAudio": "تشغيل صوت",
+  "openFolder": "فتح مجلد",
+  "dropMediaHint": "اسحب ملفات الصوت والفيديو أو المجلد إلى نور"
+}

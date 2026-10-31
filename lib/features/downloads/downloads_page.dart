@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/player_route.dart';
 import '../../data/library_controller.dart';
+import '../../data/online_error.dart';
 import '../../data/online_media_service.dart';
 import '../../data/download_options.dart';
 
@@ -253,12 +254,22 @@ class _DownloadsPageState extends State<DownloadsPage> {
               ],
               if (online.error != null) ...[
                 const SizedBox(height: 20),
-                Text(
-                  l.onlineUnavailable,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                const SizedBox(height: 8),
-                Text(l.tryStreaming),
+                ...() {
+                  final kind = classifyOnlineError(online.error);
+                  return [
+                    Text(
+                      onlineErrorText(l, kind),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    // Streaming cannot help when the source itself refuses.
+                    if (_streamingMayHelp(kind)) ...[
+                      const SizedBox(height: 8),
+                      Text(l.tryStreaming),
+                    ],
+                  ];
+                }(),
                 ExpansionTile(
                   title: Text(l.errorDetails),
                   children: [
@@ -352,3 +363,24 @@ class _DownloadsPageState extends State<DownloadsPage> {
     );
   }
 }
+
+String onlineErrorText(AppLocalizations l, OnlineErrorKind kind) =>
+    switch (kind) {
+      OnlineErrorKind.network => l.errorNetwork,
+      OnlineErrorKind.private => l.errorPrivate,
+      OnlineErrorKind.loginRequired => l.errorLoginRequired,
+      OnlineErrorKind.unavailable => l.errorUnavailable,
+      OnlineErrorKind.unsupported => l.errorUnsupported,
+      OnlineErrorKind.quality => l.errorQuality,
+      OnlineErrorKind.tooLarge => l.errorTooLarge,
+      OnlineErrorKind.storage => l.errorStorage,
+      OnlineErrorKind.engine => l.errorEngine,
+      OnlineErrorKind.other => l.onlineUnavailable,
+    };
+
+bool _streamingMayHelp(OnlineErrorKind kind) => const {
+  OnlineErrorKind.quality,
+  OnlineErrorKind.tooLarge,
+  OnlineErrorKind.storage,
+  OnlineErrorKind.other,
+}.contains(kind);

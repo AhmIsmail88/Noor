@@ -15,9 +15,13 @@ class AppSettings extends ChangeNotifier {
   bool _readOnly = false;
   Locale _locale = const Locale('ar');
   ThemeMode _themeMode = ThemeMode.dark;
+  bool _autoplayNext = true;
 
   Locale get locale => _locale;
   ThemeMode get themeMode => _themeMode;
+
+  /// Play the next video in the folder/selection when one finishes.
+  bool get autoplayNext => _autoplayNext;
 
   static Future<AppSettings> open() async {
     final directory = await getApplicationSupportDirectory();
@@ -44,6 +48,8 @@ class AppSettings extends ChangeNotifier {
               .where((mode) => mode.name == data['theme'])
               .firstOrNull ??
           ThemeMode.dark;
+      // Missing in files written before this setting existed.
+      _autoplayNext = data['autoplayNext'] != false;
     } catch (error) {
       _readOnly = true;
       debugPrint('Settings unreadable; preserving the original file: $error');
@@ -56,6 +62,7 @@ class AppSettings extends ChangeNotifier {
       'version': 1,
       'locale': _locale.languageCode,
       'theme': _themeMode.name,
+      'autoplayNext': _autoplayNext,
     });
     _writes = _writes
         .then((_) async {
@@ -79,6 +86,12 @@ class AppSettings extends ChangeNotifier {
 
   void setThemeMode(ThemeMode value) {
     _themeMode = value;
+    _save();
+    notifyListeners();
+  }
+
+  void setAutoplayNext(bool value) {
+    _autoplayNext = value;
     _save();
     notifyListeners();
   }

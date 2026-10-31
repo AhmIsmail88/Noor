@@ -272,4 +272,58 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dropMediaHint => 'اسحب ملفات الصوت والفيديو أو المجلد إلى نور';
+
+  @override
+  String get autoplayNext => 'تشغيل الفيديو التالي تلقائيًا';
+
+  @override
+  String get autoplayNextHint =>
+      'عند انتهاء الفيديو يبدأ التالي من نفس المجلد أو الاختيار بعد 5 ثوانٍ.';
+
+  @override
+  String upNextIn(int seconds, String title) {
+    return 'التالي خلال $seconds ث: $title';
+  }
+
+  @override
+  String get playNow => 'تشغيل الآن';
+
+  @override
+  String removedFromLibrary(String title) {
+    return 'حُذف «$title» من المكتبة';
+  }
+
+  @override
+  String get undo => 'تراجع';
+
+  @override
+  String get errorNetwork =>
+      'تعذّر الاتصال بالموقع. تأكد من الإنترنت ثم أعد المحاولة.';
+
+  @override
+  String get errorUnavailable => 'هذا الفيديو غير متاح أو حُذف من الموقع.';
+
+  @override
+  String get errorPrivate => 'هذا الفيديو خاص ولا يمكن الوصول إليه.';
+
+  @override
+  String get errorLoginRequired =>
+      'الموقع يطلب تسجيل الدخول أو التحقق لهذا الفيديو.';
+
+  @override
+  String get errorUnsupported =>
+      'هذا الرابط غير مدعوم. جرّب رابط الفيديو نفسه.';
+
+  @override
+  String get errorQuality =>
+      'الجودة المطلوبة غير متاحة. اختر جودة أعلى أو «أعلى جودة متاحة».';
+
+  @override
+  String get errorTooLarge => 'الملف أكبر من الحد المسموح (2 جيجابايت).';
+
+  @override
+  String get errorStorage => 'لا توجد مساحة كافية لحفظ الملف.';
+
+  @override
+  String get errorEngine => 'ملفات محرك التحميل ناقصة. استخدم مجلد نور الكامل.';
 }

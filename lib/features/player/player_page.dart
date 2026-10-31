@@ -15,6 +15,7 @@ import '../../app/format.dart';
 import '../../app/l10n/gen/app_localizations.dart';
 import '../../app/theme.dart';
 import '../../data/library_controller.dart';
+import '../../data/media_item.dart';
 import '../../data/online_media_service.dart';
 import '../../data/video_folder.dart';
 
@@ -25,11 +26,15 @@ class PlayerPage extends StatefulWidget {
     required this.library,
     this.onlineSource,
     this.online,
+    this.autoplayNext = false,
   });
   final String path;
   final LibraryController library;
   final ResolvedMedia? onlineSource;
   final OnlineMediaService? online;
+
+  /// When playback ends, count down and open the next video.
+  final bool autoplayNext;
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
@@ -73,6 +78,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   bool _backgroundDismissed = false;
   bool _startedOnce = false;
   String? _nextPath;
+  static const _upNextDelay = 5;
+  Timer? _upNextTimer;
+  int? _upNextSeconds;
   double? _edgeStart;
   double _edgeDistance = 0;
 
@@ -103,7 +111,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
       }),
       _player.stream.playing.listen(_onPlaying),
       _player.stream.completed.listen((done) {
-        if (done) _saveProgress(finished: true);
+        if (!done) return;
+        _saveProgress(finished: true);
+        _startUpNext();
       }),
     ]);
     if (Platform.isAndroid) {
@@ -191,9 +201,33 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     }
   }
 
+  void _startUpNext() {
+    if (!widget.autoplayNext || _nextPath == null || !_isActive || _disposed) {
+      return;
+    }
+    _upNextTimer?.cancel();
+    setState(() => _upNextSeconds = _upNextDelay);
+    _upNextTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_disposed) return timer.cancel();
+      final left = (_upNextSeconds ?? 1) - 1;
+      if (left > 0) return setState(() => _upNextSeconds = left);
+      _cancelUpNext();
+      unawaited(_next());
+    });
+  }
+
+  void _cancelUpNext() {
+    _upNextTimer?.cancel();
+    _upNextTimer = null;
+    if (_upNextSeconds != null && !_disposed) {
+      setState(() => _upNextSeconds = null);
+    }
+  }
+
   Future<void> _next() async {
     final path = _nextPath;
     if (path == null) return;
+    _cancelUpNext();
     _saveProgress();
     await widget.library.flush();
     if (!mounted) return;
@@ -327,6 +361,8 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
 
   void _onPlaying(bool playing) {
     if (_disposed || !_ready) return;
+    // Replaying or seeking back after the end means "stay on this video".
+    if (playing) _cancelUpNext();
     if (playing) _backgroundDismissed = false;
     unawaited(_syncBackground());
     _saveTimer?.cancel();
@@ -458,6 +494,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     _disposed = true;
     _hideTimer?.cancel();
     _saveTimer?.cancel();
+    _upNextTimer?.cancel();
     _saveProgress(inDispose: true);
     _decoderErrorTimer?.cancel();
     unawaited(widget.library.flush());
@@ -578,6 +615,12 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
               ),
             ),
             Positioned.fill(child: _overlay(l)),
+            if (_upNextSeconds != null && _nextPath != null)
+              PositionedDirectional(
+                end: 16,
+                bottom: 140,
+                child: SafeArea(child: _upNextCard(l)),
+              ),
             // Keep Video mounted: mpv can emit recoverable errors while audio
             // and video continue. Replacing this subtree detached the picture.
             if (_error != null)
@@ -634,6 +677,44 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _upNextCard(AppLocalizations l) {
+    final next = _nextPath!;
+    final title = widget.library.findByPath(next)?.title ?? titleFromPath(next);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 360),
+      child: Material(
+        color: Colors.black87,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l.upNextIn(_upNextSeconds!, title),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: _cancelUpNext,
+                    child: Text(
+                      MaterialLocalizations.of(context).cancelButtonLabel,
+                    ),
+                  ),
+                  FilledButton.tonal(onPressed: _next, child: Text(l.playNow)),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

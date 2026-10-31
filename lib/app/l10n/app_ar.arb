@@ -104,5 +104,37 @@
   "downloadWaiting": "انتظار الاتصال - ستتم إعادة المحاولة",
   "openAudio": "تشغيل صوت",
   "openFolder": "فتح مجلد",
-  "dropMediaHint": "اسحب ملفات الصوت والفيديو أو المجلد إلى نور"
+  "dropMediaHint": "اسحب ملفات الصوت والفيديو أو المجلد إلى نور",
+  "autoplayNext": "تشغيل الفيديو التالي تلقائيًا",
+  "autoplayNextHint": "عند انتهاء الفيديو يبدأ التالي من نفس المجلد أو الاختيار بعد 5 ثوانٍ.",
+  "upNextIn": "التالي خلال {seconds} ث: {title}",
+  "@upNextIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "playNow": "تشغيل الآن",
+  "removedFromLibrary": "حُذف «{title}» من المكتبة",
+  "@removedFromLibrary": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "undo": "تراجع",
+  "errorNetwork": "تعذّر الاتصال بالموقع. تأكد من الإنترنت ثم أعد المحاولة.",
+  "errorUnavailable": "هذا الفيديو غير متاح أو حُذف من الموقع.",
+  "errorPrivate": "هذا الفيديو خاص ولا يمكن الوصول إليه.",
+  "errorLoginRequired": "الموقع يطلب تسجيل الدخول أو التحقق لهذا الفيديو.",
+  "errorUnsupported": "هذا الرابط غير مدعوم. جرّب رابط الفيديو نفسه.",
+  "errorQuality": "الجودة المطلوبة غير متاحة. اختر جودة أعلى أو «أعلى جودة متاحة».",
+  "errorTooLarge": "الملف أكبر من الحد المسموح (2 جيجابايت).",
+  "errorStorage": "لا توجد مساحة كافية لحفظ الملف.",
+  "errorEngine": "ملفات محرك التحميل ناقصة. استخدم مجلد نور الكامل."
 }

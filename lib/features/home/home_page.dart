@@ -133,6 +133,7 @@ class _HomePageState extends State<HomePage> {
                   for (final item in resume)
                     MediaTile(
                       item: item,
+                      missing: widget.library.isMissing(item.path),
                       onTap: () => context.openPlayer(item.path),
                     ),
                 ],

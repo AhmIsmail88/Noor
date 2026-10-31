@@ -40,6 +40,7 @@ class _NoorAppState extends State<NoorApp>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_incomingMedia());
       unawaited(_online.reconcileDownloads());
+      unawaited(widget.library.checkFiles());
     });
     _reconcileTimer = Timer.periodic(
       const Duration(seconds: 15),
@@ -94,6 +95,7 @@ class _NoorAppState extends State<NoorApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_online.reconcileDownloads());
+      unawaited(widget.library.checkFiles());
       unawaited(_incomingMedia());
     }
     if (state != AppLifecycleState.resumed) {

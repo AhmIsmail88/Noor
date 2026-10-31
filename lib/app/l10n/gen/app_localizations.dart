@@ -601,6 +601,96 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'اسحب ملفات الصوت والفيديو أو المجلد إلى نور'**
   String get dropMediaHint;
+
+  /// No description provided for @autoplayNext.
+  ///
+  /// In ar, this message translates to:
+  /// **'تشغيل الفيديو التالي تلقائيًا'**
+  String get autoplayNext;
+
+  /// No description provided for @autoplayNextHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'عند انتهاء الفيديو يبدأ التالي من نفس المجلد أو الاختيار بعد 5 ثوانٍ.'**
+  String get autoplayNextHint;
+
+  /// No description provided for @upNextIn.
+  ///
+  /// In ar, this message translates to:
+  /// **'التالي خلال {seconds} ث: {title}'**
+  String upNextIn(int seconds, String title);
+
+  /// No description provided for @playNow.
+  ///
+  /// In ar, this message translates to:
+  /// **'تشغيل الآن'**
+  String get playNow;
+
+  /// No description provided for @removedFromLibrary.
+  ///
+  /// In ar, this message translates to:
+  /// **'حُذف «{title}» من المكتبة'**
+  String removedFromLibrary(String title);
+
+  /// No description provided for @undo.
+  ///
+  /// In ar, this message translates to:
+  /// **'تراجع'**
+  String get undo;
+
+  /// No description provided for @errorNetwork.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر الاتصال بالموقع. تأكد من الإنترنت ثم أعد المحاولة.'**
+  String get errorNetwork;
+
+  /// No description provided for @errorUnavailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الفيديو غير متاح أو حُذف من الموقع.'**
+  String get errorUnavailable;
+
+  /// No description provided for @errorPrivate.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الفيديو خاص ولا يمكن الوصول إليه.'**
+  String get errorPrivate;
+
+  /// No description provided for @errorLoginRequired.
+  ///
+  /// In ar, this message translates to:
+  /// **'الموقع يطلب تسجيل الدخول أو التحقق لهذا الفيديو.'**
+  String get errorLoginRequired;
+
+  /// No description provided for @errorUnsupported.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الرابط غير مدعوم. جرّب رابط الفيديو نفسه.'**
+  String get errorUnsupported;
+
+  /// No description provided for @errorQuality.
+  ///
+  /// In ar, this message translates to:
+  /// **'الجودة المطلوبة غير متاحة. اختر جودة أعلى أو «أعلى جودة متاحة».'**
+  String get errorQuality;
+
+  /// No description provided for @errorTooLarge.
+  ///
+  /// In ar, this message translates to:
+  /// **'الملف أكبر من الحد المسموح (2 جيجابايت).'**
+  String get errorTooLarge;
+
+  /// No description provided for @errorStorage.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد مساحة كافية لحفظ الملف.'**
+  String get errorStorage;
+
+  /// No description provided for @errorEngine.
+  ///
+  /// In ar, this message translates to:
+  /// **'ملفات محرك التحميل ناقصة. استخدم مجلد نور الكامل.'**
+  String get errorEngine;
 }
 
 class _AppLocalizationsDelegate

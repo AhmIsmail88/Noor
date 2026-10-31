@@ -83,5 +83,20 @@
   "downloadWaiting": "Waiting to retry — check your connection",
   "openAudio": "Play audio",
   "openFolder": "Open folder",
-  "dropMediaHint": "Drop audio, video files or a folder into NOOR"
+  "dropMediaHint": "Drop audio, video files or a folder into NOOR",
+  "autoplayNext": "Autoplay next video",
+  "autoplayNextHint": "When a video ends, the next one from the same folder or selection starts after 5 seconds.",
+  "upNextIn": "Up next in {seconds}s: {title}",
+  "playNow": "Play now",
+  "removedFromLibrary": "Removed “{title}” from the library",
+  "undo": "Undo",
+  "errorNetwork": "Could not reach the site. Check your internet connection and try again.",
+  "errorUnavailable": "This video is unavailable or was removed from the site.",
+  "errorPrivate": "This video is private and cannot be accessed.",
+  "errorLoginRequired": "The site requires signing in or verification for this video.",
+  "errorUnsupported": "This link is not supported. Try the link to the video itself.",
+  "errorQuality": "The requested quality is unavailable. Choose a higher resolution or “Highest available”.",
+  "errorTooLarge": "The file is larger than the 2 GB limit.",
+  "errorStorage": "There is not enough storage space to save the file.",
+  "errorEngine": "Download engine files are missing. Use the complete NOOR folder."
 }

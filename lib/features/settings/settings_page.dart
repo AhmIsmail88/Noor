@@ -40,6 +40,14 @@ class SettingsPage extends StatelessWidget {
             selected: {settings.themeMode},
             onSelectionChanged: (s) => settings.setThemeMode(s.first),
           ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.autoplayNext),
+            subtitle: Text(l.autoplayNextHint),
+            value: settings.autoplayNext,
+            onChanged: settings.setAutoplayNext,
+          ),
         ],
       ),
     );

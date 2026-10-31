@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/player_route.dart';
 import '../../app/l10n/gen/app_localizations.dart';
 import '../../data/library_controller.dart';
+import '../../data/media_item.dart';
 import 'media_tile.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -16,6 +17,24 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   String _query = '';
   LibraryFilter _filter = LibraryFilter.all;
+
+  /// Removal is immediate (only the library entry, never the file) and can
+  /// be undone from the snackbar, so no confirmation dialog is needed.
+  void _remove(MediaItem item) {
+    final l = AppLocalizations.of(context)!;
+    widget.library.remove(item.path);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l.removedFromLibrary(item.title)),
+          action: SnackBarAction(
+            label: l.undo,
+            onPressed: () => widget.library.restore(item),
+          ),
+        ),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,10 +100,11 @@ class _LibraryPageState extends State<LibraryPage> {
                         final item = items[i];
                         return MediaTile(
                           item: item,
+                          missing: widget.library.isMissing(item.path),
                           onTap: () => context.openPlayer(item.path),
                           onToggleFavorite: () =>
                               widget.library.toggleFavorite(item.path),
-                          onRemove: () => widget.library.remove(item.path),
+                          onRemove: () => _remove(item),
                         );
                       },
                     ),

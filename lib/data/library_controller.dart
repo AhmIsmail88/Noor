@@ -157,6 +157,32 @@ class LibraryController extends ChangeNotifier {
 
   MediaItem? findByPath(String path) => _items[path];
 
+  // Checked in the background: list tiles must not touch the disk on every
+  // rebuild (playback saves progress and rebuilds the library every 5 s).
+  Set<String> _missing = {};
+  bool _checkingFiles = false;
+  bool isMissing(String path) => _missing.contains(path);
+
+  /// Re-check local files (not content:// URIs) after start and on resume.
+  Future<void> checkFiles() async {
+    if (_checkingFiles) return;
+    _checkingFiles = true;
+    try {
+      final missing = <String>{};
+      for (final item in _items.values.toList()) {
+        if (!item.isContentUri && !await File(item.path).exists()) {
+          missing.add(item.path);
+        }
+      }
+      if (!setEquals(missing, _missing)) {
+        _missing = missing;
+        if (!_disposed) notifyListeners();
+      }
+    } finally {
+      _checkingFiles = false;
+    }
+  }
+
   /// Items that were started but not finished, most recent first.
   List<MediaItem> get continueWatching {
     final list =
@@ -262,6 +288,14 @@ class LibraryController extends ChangeNotifier {
       _scheduleSave();
       notifyListeners();
     }
+  }
+
+  /// Undo for [remove]: puts the same item back with its history intact.
+  void restore(MediaItem item) {
+    if (_items.containsKey(item.path)) return;
+    _items[item.path] = item;
+    _scheduleSave();
+    notifyListeners();
   }
 
   /// Lets callers that saved with `notify: false` (e.g. from dispose)

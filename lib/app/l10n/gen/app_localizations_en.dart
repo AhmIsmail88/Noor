@@ -271,4 +271,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dropMediaHint => 'Drop audio, video files or a folder into NOOR';
+
+  @override
+  String get autoplayNext => 'Autoplay next video';
+
+  @override
+  String get autoplayNextHint =>
+      'When a video ends, the next one from the same folder or selection starts after 5 seconds.';
+
+  @override
+  String upNextIn(int seconds, String title) {
+    return 'Up next in ${seconds}s: $title';
+  }
+
+  @override
+  String get playNow => 'Play now';
+
+  @override
+  String removedFromLibrary(String title) {
+    return 'Removed “$title” from the library';
+  }
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String get errorNetwork =>
+      'Could not reach the site. Check your internet connection and try again.';
+
+  @override
+  String get errorUnavailable =>
+      'This video is unavailable or was removed from the site.';
+
+  @override
+  String get errorPrivate => 'This video is private and cannot be accessed.';
+
+  @override
+  String get errorLoginRequired =>
+      'The site requires signing in or verification for this video.';
+
+  @override
+  String get errorUnsupported =>
+      'This link is not supported. Try the link to the video itself.';
+
+  @override
+  String get errorQuality =>
+      'The requested quality is unavailable. Choose a higher resolution or “Highest available”.';
+
+  @override
+  String get errorTooLarge => 'The file is larger than the 2 GB limit.';
+
+  @override
+  String get errorStorage =>
+      'There is not enough storage space to save the file.';
+
+  @override
+  String get errorEngine =>
+      'Download engine files are missing. Use the complete NOOR folder.';
 }

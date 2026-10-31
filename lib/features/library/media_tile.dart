@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../app/format.dart';
@@ -11,11 +9,15 @@ class MediaTile extends StatelessWidget {
     super.key,
     required this.item,
     required this.onTap,
+    this.missing = false,
     this.onToggleFavorite,
     this.onRemove,
   });
 
   final MediaItem item;
+
+  /// From [LibraryController.isMissing]; checked off the build path.
+  final bool missing;
   final VoidCallback onTap;
   final VoidCallback? onToggleFavorite;
   final VoidCallback? onRemove;
@@ -24,7 +26,7 @@ class MediaTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    final exists = item.isContentUri || File(item.path).existsSync();
+    final exists = !missing;
 
     final meta = <String>[
       if (!exists) l.fileMissing,

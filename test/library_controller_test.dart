@@ -26,6 +26,34 @@ void main() {
     await dir.delete(recursive: true);
   });
 
+  test('restore undoes a removal with history intact', () async {
+    final c = controller();
+    final item = c.importPath('${dir.path}/clip.mp4');
+    c.saveProgress(item.path, positionMs: 30000, durationMs: 90000);
+    c.toggleFavorite(item.path);
+    c.remove(item.path);
+    expect(c.findByPath(item.path), isNull);
+    c.restore(item);
+    final back = c.findByPath(item.path)!;
+    expect(back.positionMs, 30000);
+    expect(back.favorite, isTrue);
+  });
+
+  test('missing files are found in the background', () async {
+    final c = controller();
+    final present = File('${dir.path}/present.mp4');
+    await present.writeAsBytes([1]);
+    c.importPath(present.path);
+    c.importPath('${dir.path}/gone.mp4');
+    expect(c.isMissing('${dir.path}/gone.mp4'), isFalse);
+    await c.checkFiles();
+    expect(c.isMissing('${dir.path}/gone.mp4'), isTrue);
+    expect(c.isMissing(present.path), isFalse);
+    await present.delete();
+    await c.checkFiles();
+    expect(c.isMissing(present.path), isTrue);
+  });
+
   test('short clips are not finished at zero or halfway', () {
     final item = MediaItem(
       path: '/short.mp4',

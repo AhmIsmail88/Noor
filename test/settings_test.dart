@@ -25,6 +25,26 @@ void main() {
       await dir.delete(recursive: true);
     }
   });
+  test('autoplay next defaults on and survives reopening', () async {
+    final dir = await Directory.systemTemp.createTemp('noor-settings-');
+    try {
+      final file = File('${dir.path}/settings.json');
+      // A file written before the setting existed keeps the default (on).
+      await file.writeAsString('{"version":1,"locale":"ar","theme":"dark"}');
+      final settings = AppSettings.forFile(file);
+      await settings.load();
+      expect(settings.autoplayNext, isTrue);
+      settings.setAutoplayNext(false);
+      await settings.flush();
+      final reloaded = AppSettings.forFile(file);
+      await reloaded.load();
+      expect(reloaded.autoplayNext, isFalse);
+      settings.dispose();
+      reloaded.dispose();
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
   test('unknown settings version is preserved', () async {
     final dir = await Directory.systemTemp.createTemp('noor-settings-');
     try {

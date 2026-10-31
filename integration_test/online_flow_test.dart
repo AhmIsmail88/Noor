@@ -160,7 +160,9 @@ void main() {
       greaterThan(100000),
     );
     // On a phone the list sits below the form and is not built until scrolled.
-    final tile = find.widgetWithText(ListTile, downloaded.title).first;
+    // Earlier runs leave copies with the same title; the saved location
+    // ("… (1).mkv") is unique, and scrolling needs exactly one match.
+    final tile = find.widgetWithText(ListTile, downloaded.savedLocation!);
     await tester.scrollUntilVisible(
       tile,
       300,
@@ -171,8 +173,13 @@ void main() {
     await playback(tester, 'completed download');
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
+    // The list was scrolled down to the download; scroll back to the form.
     final stream = find.text(l.streaming);
-    await tester.ensureVisible(stream);
+    await tester.scrollUntilVisible(
+      stream,
+      -300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(stream);
     for (var i = 0; i < 240; i++) {
       await tick(tester);

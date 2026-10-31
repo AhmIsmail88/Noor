@@ -13,6 +13,13 @@ import 'download_options.dart';
 import 'link_playlist.dart';
 import 'link_qualities.dart';
 import 'media_import_store.dart';
+import 'online/download_queue.dart';
+import 'online/links.dart';
+import 'online/windows_engine.dart';
+
+// Moved out of this file; re-exported so importers keep working.
+export 'online/download_queue.dart' show QueuedDownload;
+export 'online/links.dart';
 
 enum OnlineStage {
   idle,
@@ -25,106 +32,6 @@ enum OnlineStage {
   waiting,
 }
 
-class ResolvedMedia {
-  const ResolvedMedia({
-    required this.sourceUrl,
-    required this.url,
-    required this.title,
-    this.headers = const {},
-  });
-  final String sourceUrl;
-  final String url;
-  final String title;
-  final Map<String, String> headers;
-
-  factory ResolvedMedia.fromMap(String source, Map<String, dynamic> data) {
-    final url = data['url'] as String?;
-    if (url == null || !isWebUrl(url)) {
-      throw const FormatException(
-        'No playable stream was returned by this source.',
-      );
-    }
-    final headers = <String, String>{};
-    final raw = data['http_headers'];
-    if (raw is Map) {
-      for (final entry in raw.entries) {
-        if (entry.key is String && entry.value is String) {
-          headers[entry.key as String] = entry.value as String;
-        }
-      }
-    }
-    // Some CDNs (TikTok) refuse the stream without the extractor's session
-    // cookies, which yt-dlp reports separately from http_headers.
-    final cookies = data['cookies'];
-    if (cookies is String &&
-        !headers.keys.any((k) => k.toLowerCase() == 'cookie')) {
-      final cookie = cookieHeader(cookies);
-      if (cookie.isNotEmpty) headers['Cookie'] = cookie;
-    }
-    return ResolvedMedia(
-      sourceUrl: source,
-      url: url,
-      title: data['title'] as String? ?? Uri.parse(source).host,
-      headers: headers,
-    );
-  }
-}
-
-/// Turns yt-dlp's `cookies` field (Set-Cookie style: `a=1; Domain=…; Path=/;
-/// Secure; b="2"; Expires=…`) into a request `Cookie` header: `a=1; b=2`.
-String cookieHeader(String setCookies) {
-  const attributes = {
-    'domain',
-    'path',
-    'expires',
-    'max-age',
-    'secure',
-    'httponly',
-    'samesite',
-    'priority',
-    'partitioned',
-    'version',
-    'comment',
-  };
-  final pairs = <String>[];
-  for (final part in setCookies.split(';')) {
-    final token = part.trim();
-    final eq = token.indexOf('=');
-    if (eq <= 0) continue; // flags such as Secure
-    final name = token.substring(0, eq).trim();
-    if (attributes.contains(name.toLowerCase())) continue;
-    var value = token.substring(eq + 1).trim();
-    if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
-      value = value.substring(1, value.length - 1);
-    }
-    pairs.add('$name=$value');
-  }
-  return pairs.join('; ');
-}
-
-bool isWebUrl(String value) {
-  final uri = Uri.tryParse(value.trim());
-  return uri != null &&
-      (uri.scheme == 'https' || uri.scheme == 'http') &&
-      uri.host.isNotEmpty &&
-      uri.userInfo.isEmpty;
-}
-
-/// The first web link in shared text, e.g. TikTok's "Check out this video
-/// https://vm.tiktok.com/ZM6abc/ #fyp". Trailing punctuation is dropped.
-String? firstWebUrl(String text) {
-  for (final match in RegExp(r'https?://[^\s<>"]+').allMatches(text)) {
-    final url = match.group(0)!.replaceFirst(RegExp(r'[.,;:!?)\]]+$'), '');
-    if (isWebUrl(url)) return url;
-  }
-  return null;
-}
-
-bool isDirectMediaUrl(String value) => RegExp(
-  r'\.(mp4|mkv|webm|avi|mov|flv|wmv|mpeg|mpg|m4v|3gp|ts|m3u8|mpd)$',
-  caseSensitive: false,
-).hasMatch(Uri.parse(value).path);
-
 /// Coordinates durable transfers; completed files live outside OS cache.
 class OnlineMediaService extends ChangeNotifier {
   OnlineMediaService(this.library, {Directory? downloadRoot})
@@ -133,7 +40,6 @@ class OnlineMediaService extends ChangeNotifier {
   static const _channel = MethodChannel('noor/online_media');
   static const _events = EventChannel('noor/online_progress');
   StreamSubscription<dynamic>? _subscription;
-  Process? _process;
   Directory? _root;
   Timer? _poll;
   Map<String, dynamic>? _job;
@@ -202,34 +108,12 @@ class OnlineMediaService extends ChangeNotifier {
     if (_queueLoaded) return;
     _queueLoaded = true;
     final file = _queueFile;
-    if (file == null || !await file.exists()) return;
-    try {
-      final data = jsonDecode(await file.readAsString());
-      if (data is List) {
-        for (final entry in data) {
-          final item = entry is Map ? QueuedDownload.fromJson(entry) : null;
-          if (item != null) queue.add(item);
-        }
-      }
-    } catch (error) {
-      debugPrint('Ignoring unreadable download queue: $error');
-    }
+    if (file != null) queue.addAll(await loadQueue(file));
   }
 
   Future<void> _persistQueue() async {
     final file = _queueFile;
-    if (file == null) return;
-    try {
-      await file.parent.create(recursive: true);
-      final temp = File('${file.path}.tmp');
-      await temp.writeAsString(
-        jsonEncode([for (final item in queue) item.toJson()]),
-        flush: true,
-      );
-      await temp.rename(file.path);
-    } catch (error) {
-      debugPrint('Download queue save failed: $error');
-    }
+    if (file != null) await saveQueue(file, queue);
   }
 
   /// Starts [input] now when the slot is free, otherwise queues it.
@@ -456,7 +340,7 @@ class OnlineMediaService extends ChangeNotifier {
       _pausing = true;
       _job!['state'] = 'paused';
       await _persistJob();
-      await _killProcess();
+      await _engine.kill();
     }
   }
 
@@ -669,7 +553,6 @@ class OnlineMediaService extends ChangeNotifier {
       rethrow;
     } finally {
       busy = false;
-      _process = null;
       _changed();
     }
   }
@@ -1039,107 +922,27 @@ class OnlineMediaService extends ChangeNotifier {
     );
   }
 
-  Future<String> _windows(String source, List<String> options) async {
-    final engines = _windowsEngines;
-    final executable = File(p.join(engines.path, 'yt-dlp.exe'));
-    final node = File(p.join(engines.path, 'node.exe'));
-    if (!await executable.exists() || !await node.exists()) {
-      throw StateError(
-        'Online engine files are missing. Use the complete NOOR Windows folder.',
-      );
-    }
-    final args = [
-      '--ignore-config',
-      // Piped output otherwise uses the ANSI code page (e.g. cp1256 for
-      // Arabic titles), which the UTF-8 decoder below cannot read.
-      '--encoding',
-      'utf-8',
-      '--no-playlist',
-      '--socket-timeout',
-      '20',
-      '--retries',
-      '1',
-      '--extractor-retries',
-      '1',
-      '--max-filesize',
-      '2G',
-      '--js-runtimes',
-      'node:${node.path}',
-      if (await File(p.join(engines.path, 'ffmpeg.exe')).exists()) ...[
-        '--ffmpeg-location',
-        engines.path,
-      ],
-      ...options,
-      '--',
-      source,
-    ];
-    final process = await Process.start(
-      executable.path,
-      args,
-      runInShell: false,
-    );
-    _process = process;
-    try {
-      await _desktopChannel.invokeMethod<void>('trackProcess', process.pid);
-    } catch (_) {
-      process.kill();
-      rethrow;
-    }
-    if (_cancelled || _pausing) process.kill();
-    final output = StringBuffer();
-    final errors = StringBuffer();
-    const decoder = Utf8Decoder(allowMalformed: true);
-    final stdoutDone = process.stdout
-        .transform(decoder)
-        .transform(const LineSplitter())
-        .forEach((line) {
-          if (line.contains('__NOOR_PROGRESS__')) {
-            final parsed = parseProgressLine(line);
-            if (parsed != null) {
-              progress = parsed.fraction;
-              speed = parsed.speed;
-              eta = parsed.eta;
-              stage = OnlineStage.downloading;
-              _changed();
-              unawaited(_tray());
-            }
-          } else {
-            output.writeln(line);
-          }
-        });
-    final stderrDone = process.stderr.transform(decoder).forEach(errors.write);
-    final watchdog = _resolving
-        ? Timer(const Duration(minutes: 10), () {
-            unawaited(cancel());
-          })
-        : null;
-    try {
-      final code = await process.exitCode;
-      await Future.wait([stdoutDone, stderrDone]);
-      if (_cancelled) throw StateError('Cancelled');
-      if (code != 0) {
-        throw StateError(
-          errors.isEmpty ? 'This source is unavailable.' : errors.toString(),
-        );
-      }
-      return output.toString();
-    } finally {
-      watchdog?.cancel();
-      if (identical(_process, process)) _process = null;
-    }
-  }
+  late final _engine = WindowsEngine();
 
-  Future<void> _killProcess() async {
-    final process = _process;
-    if (process != null) {
-      await Process.run('taskkill', [
-        '/PID',
-        '${process.pid}',
-        '/T',
-        '/F',
-      ], runInShell: false);
-    }
-  }
+  /// Runs the Windows engine with this transfer's state and progress.
+  Future<String> _windows(String source, List<String> options) => _engine.run(
+    source,
+    options,
+    track: (pid) => _desktopChannel.invokeMethod<void>('trackProcess', pid),
+    stopRequested: () => _cancelled || _pausing,
+    cancelled: () => _cancelled,
+    onProgress: (parsed) {
+      progress = parsed.fraction;
+      speed = parsed.speed;
+      eta = parsed.eta;
+      stage = OnlineStage.downloading;
+      _changed();
+      unawaited(_tray());
+    },
+    // Only a resolve/probe can hang without progress to watch.
+    timeout: _resolving ? const Duration(minutes: 10) : null,
+    onTimeout: () => unawaited(cancel()),
+  );
 
   Future<void> cancel() async {
     // Cancel only the resolve; a paused transfer must survive it.
@@ -1148,7 +951,7 @@ class OnlineMediaService extends ChangeNotifier {
       if (Platform.isAndroid) {
         await _channel.invokeMethod<void>('cancel');
       } else {
-        await _killProcess();
+        await _engine.kill();
       }
       return;
     }
@@ -1161,7 +964,7 @@ class OnlineMediaService extends ChangeNotifier {
         _pausing = false;
         _job!['state'] = 'cancelled';
         await _persistJob();
-        await _killProcess();
+        await _engine.kill();
         if (!busy) {
           await _cleanFinishedJob();
           stage = OnlineStage.cancelled;
@@ -1176,12 +979,9 @@ class OnlineMediaService extends ChangeNotifier {
     if (Platform.isAndroid) {
       await _channel.invokeMethod<void>('cancel');
     } else {
-      await _killProcess();
+      await _engine.kill();
     }
   }
-
-  static Directory get _windowsEngines =>
-      Directory(p.join(p.dirname(Platform.resolvedExecutable), 'engines'));
 
   /// The extractor (yt-dlp) version, or null when it is unavailable.
   Future<String?> engineVersion() async {
@@ -1191,15 +991,7 @@ class OnlineMediaService extends ChangeNotifier {
         final name = await _channel.invokeMethod<String>('engineVersion');
         return name?.replaceFirst(RegExp(r'^yt-dlp\s+'), '').trim();
       }
-      if (Platform.isWindows) {
-        final exe = File(p.join(_windowsEngines.path, 'yt-dlp.exe'));
-        if (!await exe.exists()) return null;
-        final result = await Process.run(exe.path, [
-          '--ignore-config',
-          '--version',
-        ], runInShell: false);
-        return result.exitCode == 0 ? '${result.stdout}'.trim() : null;
-      }
+      if (Platform.isWindows) return await _engine.version();
     } catch (e) {
       debugPrint('Engine version: $e');
     }
@@ -1219,21 +1011,7 @@ class OnlineMediaService extends ChangeNotifier {
       if (Platform.isAndroid) {
         await _channel.invokeMethod<void>('updateEngine');
       } else if (Platform.isWindows) {
-        final exe = File(p.join(_windowsEngines.path, 'yt-dlp.exe'));
-        if (!await exe.exists()) {
-          throw StateError(
-            'Online engine files are missing. Use the complete NOOR Windows folder.',
-          );
-        }
-        final result = await Process.run(exe.path, [
-          '--ignore-config',
-          '--encoding',
-          'utf-8',
-          '-U',
-        ], runInShell: false);
-        if (result.exitCode != 0) {
-          throw StateError('${result.stderr}${result.stdout}'.trim());
-        }
+        await _engine.update();
       } else {
         throw UnsupportedError('Online sources need Android or Windows.');
       }
@@ -1266,49 +1044,4 @@ class OnlineMediaService extends ChangeNotifier {
     unawaited(_subscription?.cancel());
     super.dispose();
   }
-}
-
-class QueuedDownload {
-  const QueuedDownload(this.url, this.options);
-  final String url;
-  final DownloadOptions options;
-
-  Map<String, Object> toJson() => {'url': url, ...options.toMap()};
-
-  static QueuedDownload? fromJson(Map<dynamic, dynamic> json) {
-    final url = json['url'];
-    if (url is! String || !isWebUrl(url)) return null;
-    final options = DownloadOptions(
-      audioOnly: json['audioOnly'] == true,
-      maxHeight: (json['maxHeight'] as num?)?.toInt() ?? 720,
-      audioBitrate: (json['audioBitrate'] as num?)?.toInt() ?? 192,
-      subtitles: json['subtitles'] == true,
-    );
-    try {
-      options.validate();
-    } on ArgumentError {
-      return null;
-    }
-    return QueuedDownload(url, options);
-  }
-}
-
-/// Parses `__NOOR_PROGRESS__ 45.3%|1234.5|12` (speed in B/s, eta in s;
-/// either may be `NA`) printed by the Windows engine's progress template.
-({double fraction, double? speed, Duration? eta})? parseProgressLine(
-  String line,
-) {
-  final match = RegExp(r'__NOOR_PROGRESS__\s*([\d.]+)%(?:\|([^|]*)\|(\S*))?')
-      .firstMatch(line);
-  if (match == null) return null;
-  final fraction = (double.parse(match.group(1)!) / 100).clamp(0.0, 1.0);
-  final speed = double.tryParse(match.group(2)?.trim() ?? '');
-  final seconds = double.tryParse(match.group(3)?.trim() ?? '');
-  return (
-    fraction: fraction,
-    speed: speed == null || speed <= 0 ? null : speed,
-    eta: seconds == null || seconds < 0
-        ? null
-        : Duration(seconds: seconds.round()),
-  );
 }

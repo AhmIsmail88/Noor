@@ -168,6 +168,9 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    // Centre it: at the viewport edge the tap can land on a neighbour.
+    await Scrollable.ensureVisible(tester.element(tile), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(tile);
     await tester.pump();
     await playback(tester, 'completed download');

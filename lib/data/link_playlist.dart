@@ -1,4 +1,4 @@
-import 'online_media_service.dart' show isWebUrl;
+import 'online/links.dart' show isWebUrl;
 
 class PlaylistEntry {
   const PlaylistEntry({required this.url, required this.title, this.duration});

@@ -847,6 +847,12 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'أُضيف {count} إلى قائمة الانتظار.'**
   String playlistQueued(int count);
+
+  /// No description provided for @linkReceived.
+  ///
+  /// In ar, this message translates to:
+  /// **'وصل الرابط. اختر التحميل أو المشاهدة المباشرة.'**
+  String get linkReceived;
 }
 
 class _AppLocalizationsDelegate

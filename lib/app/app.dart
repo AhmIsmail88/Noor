@@ -67,6 +67,21 @@ class _NoorAppState extends State<NoorApp>
       if (mounted && items.isNotEmpty) {
         openPlayerRoute(_router, items.first.path);
       }
+      if (Platform.isAndroid) {
+        // Text shared from another app ("Share" → NOOR) carrying a link.
+        final shared =
+            await mediaAccessChannel.invokeListMethod<dynamic>('sharedText') ??
+            [];
+        final link = shared
+            .whereType<String>()
+            .map(firstWebUrl)
+            .nonNulls
+            .firstOrNull;
+        if (mounted && link != null) {
+          _online.incomingLink.value = link;
+          _router.go('/downloads');
+        }
+      }
     } catch (error) {
       debugPrint('Open media: $error');
     } finally {

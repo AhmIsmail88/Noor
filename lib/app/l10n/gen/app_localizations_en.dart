@@ -428,4 +428,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String playlistQueued(int count) {
     return 'Added $count to the queue.';
   }
+
+  @override
+  String get linkReceived => 'Link received. Choose Download or Streaming.';
 }

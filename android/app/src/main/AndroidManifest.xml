@@ -40,6 +40,12 @@
                 <data android:mimeType="application/ogg" />
                 <data android:mimeType="application/x-matroska" />
             </intent-filter>
+            <!-- "Share" a link from TikTok, YouTube, X, Facebook or a browser. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

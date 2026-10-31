@@ -206,6 +206,8 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
                         }
                     }
                     output.put("http_headers", headers);
+                    // Session cookies (e.g. TikTok's tt_chain_token) the stream needs.
+                    if (!data.isNull("cookies")) output.put("cookies", data.optString("cookies"));
                     // Compact format list for the quality picker (see LinkQualities).
                     output.put("duration", data.isNull("duration") ? null : data.optDouble("duration"));
                     java.util.List<Map<String, Object>> formats = new java.util.ArrayList<>();

@@ -424,4 +424,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String playlistQueued(int count) {
     return 'أُضيف $count إلى قائمة الانتظار.';
   }
+
+  @override
+  String get linkReceived => 'وصل الرابط. اختر التحميل أو المشاهدة المباشرة.';
 }

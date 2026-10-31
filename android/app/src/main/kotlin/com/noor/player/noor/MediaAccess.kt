@@ -12,10 +12,13 @@ class MediaAccess(private val activity: Activity, messenger: BinaryMessenger) {
     private val channel = MethodChannel(messenger, "noor/media_access")
     private var picker: MethodChannel.Result? = null
     private val pending = mutableListOf<Map<String, Any>>()
+    // Shared text (it may hold a link among other words); Dart extracts the link.
+    private val sharedText = mutableListOf<String>()
     init {
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "pending" -> { result.success(pending.toList()); pending.clear() }
+                "sharedText" -> { result.success(sharedText.toList()); sharedText.clear() }
                 "pick" -> {
                     if (picker != null) result.error("busy", "Picker already open", null)
                     else {
@@ -48,6 +51,12 @@ class MediaAccess(private val activity: Activity, messenger: BinaryMessenger) {
         return mapOf("path" to uri.toString(), "title" to name, "sizeBytes" to size, "isAudio" to mime.startsWith("audio/"))
     }
     fun incoming(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
+            val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return
+            sharedText.add(text)
+            channel.invokeMethod("available", null)
+            return
+        }
         if (intent?.action != Intent.ACTION_VIEW || intent.data == null) return
         val uri = intent.data!!
         if (uri.scheme != "content" && uri.scheme != "file") return

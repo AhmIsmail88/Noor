@@ -149,6 +149,31 @@ void main() {
     second.dispose();
   });
 
+  testWidgets('a shared link fills the field', (tester) async {
+    final service = FakeOnline(library, dir);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: DownloadsPage(library: library, online: service),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    service.incomingLink.value = 'https://vm.tiktok.com/ZMabc123/';
+    await tester.pumpAndSettle();
+    expect(find.text('https://vm.tiktok.com/ZMabc123/'), findsOneWidget);
+    expect(
+      find.text('Link received. Choose Download or Streaming.'),
+      findsOneWidget,
+    );
+    expect(service.incomingLink.value, isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    service.dispose();
+  });
+
   testWidgets(
     'Streaming is independently available even when downloading is possible',
     (tester) async {

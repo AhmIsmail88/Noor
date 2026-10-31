@@ -124,5 +124,6 @@
   "notAPlaylist": "This link is a single video, not a list.",
   "selectAll": "Select all",
   "downloadSelected": "Download {count}",
-  "playlistQueued": "Added {count} to the queue."
+  "playlistQueued": "Added {count} to the queue.",
+  "linkReceived": "Link received. Choose Download or Streaming."
 }

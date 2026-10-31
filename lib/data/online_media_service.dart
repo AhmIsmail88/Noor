@@ -53,6 +53,14 @@ class ResolvedMedia {
         }
       }
     }
+    // Some CDNs (TikTok) refuse the stream without the extractor's session
+    // cookies, which yt-dlp reports separately from http_headers.
+    final cookies = data['cookies'];
+    if (cookies is String &&
+        !headers.keys.any((k) => k.toLowerCase() == 'cookie')) {
+      final cookie = cookieHeader(cookies);
+      if (cookie.isNotEmpty) headers['Cookie'] = cookie;
+    }
     return ResolvedMedia(
       sourceUrl: source,
       url: url,
@@ -62,12 +70,54 @@ class ResolvedMedia {
   }
 }
 
+/// Turns yt-dlp's `cookies` field (Set-Cookie style: `a=1; Domain=…; Path=/;
+/// Secure; b="2"; Expires=…`) into a request `Cookie` header: `a=1; b=2`.
+String cookieHeader(String setCookies) {
+  const attributes = {
+    'domain',
+    'path',
+    'expires',
+    'max-age',
+    'secure',
+    'httponly',
+    'samesite',
+    'priority',
+    'partitioned',
+    'version',
+    'comment',
+  };
+  final pairs = <String>[];
+  for (final part in setCookies.split(';')) {
+    final token = part.trim();
+    final eq = token.indexOf('=');
+    if (eq <= 0) continue; // flags such as Secure
+    final name = token.substring(0, eq).trim();
+    if (attributes.contains(name.toLowerCase())) continue;
+    var value = token.substring(eq + 1).trim();
+    if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+      value = value.substring(1, value.length - 1);
+    }
+    pairs.add('$name=$value');
+  }
+  return pairs.join('; ');
+}
+
 bool isWebUrl(String value) {
   final uri = Uri.tryParse(value.trim());
   return uri != null &&
       (uri.scheme == 'https' || uri.scheme == 'http') &&
       uri.host.isNotEmpty &&
       uri.userInfo.isEmpty;
+}
+
+/// The first web link in shared text, e.g. TikTok's "Check out this video
+/// https://vm.tiktok.com/ZM6abc/ #fyp". Trailing punctuation is dropped.
+String? firstWebUrl(String text) {
+  for (final match in RegExp(r'https?://[^\s<>"]+').allMatches(text)) {
+    final url = match.group(0)!.replaceFirst(RegExp(r'[.,;:!?)\]]+$'), '');
+    if (isWebUrl(url)) return url;
+  }
+  return null;
 }
 
 bool isDirectMediaUrl(String value) => RegExp(
@@ -120,6 +170,9 @@ class OnlineMediaService extends ChangeNotifier {
   Duration? eta;
   String? error;
   MediaItem? lastDownload;
+
+  /// A link shared to NOOR from another app, waiting for the Downloads page.
+  final incomingLink = ValueNotifier<String?>(null);
 
   void _changed() {
     if (!_disposed) notifyListeners();
@@ -1207,6 +1260,7 @@ class OnlineMediaService extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    incomingLink.dispose();
     _poll?.cancel();
     if (!hasTransfer) unawaited(cancel());
     unawaited(_subscription?.cancel());

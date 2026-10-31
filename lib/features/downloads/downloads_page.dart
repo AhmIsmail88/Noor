@@ -40,6 +40,9 @@ class _DownloadsPageState extends State<DownloadsPage> {
   void initState() {
     super.initState();
     unawaited(widget.online.loadHistory().catchError((Object _) {}));
+    // A link shared from another app, now or while this page is open.
+    widget.online.incomingLink.addListener(_takeIncomingLink);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _takeIncomingLink());
     _url.addListener(() {
       // Another link: its qualities are unknown again.
       if (_qualities != null && _url.text.trim() != _qualitiesFor) {
@@ -209,8 +212,22 @@ class _DownloadsPageState extends State<DownloadsPage> {
     }
   }
 
+  void _takeIncomingLink() {
+    final link = widget.online.incomingLink.value;
+    if (link == null || !mounted) return;
+    widget.online.incomingLink.value = null;
+    setState(() {
+      _url.text = link;
+      _validation = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context)!.linkReceived)),
+    );
+  }
+
   @override
   void dispose() {
+    widget.online.incomingLink.removeListener(_takeIncomingLink);
     _url.dispose();
     super.dispose();
   }

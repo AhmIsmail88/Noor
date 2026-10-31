@@ -116,5 +116,13 @@
   "addedToQueue": "Added to the queue; it starts after the current download.",
   "queueTitle": "Waiting in queue ({count})",
   "queueWaitingPaused": "Queued downloads start after the paused download is resumed or cancelled.",
-  "removeFromQueue": "Remove from queue"
+  "removeFromQueue": "Remove from queue",
+  "timeLeft": "{time} left",
+  "includeSubtitles": "Include subtitles (Arabic and English, when available)",
+  "loadSubtitleFile": "Load subtitle file…",
+  "pickFromPlaylist": "Choose from a playlist or channel",
+  "notAPlaylist": "This link is a single video, not a list.",
+  "selectAll": "Select all",
+  "downloadSelected": "Download {count}",
+  "playlistQueued": "Added {count} to the queue."
 }

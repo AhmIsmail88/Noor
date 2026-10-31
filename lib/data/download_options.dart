@@ -3,8 +3,17 @@ class DownloadOptions {
     this.audioOnly = false,
     this.maxHeight = 720,
     this.audioBitrate = 192,
+    this.subtitles = false,
   });
   final bool audioOnly;
+
+  /// Embed Arabic/English subtitles in the MKV when the source has them.
+  /// Ignored for audio-only downloads.
+  final bool subtitles;
+
+  /// Only uploaded subtitles: automatic ones are machine-made and their
+  /// many translations are often rate-limited, which fails the download.
+  static const subtitleLanguages = 'ar.*,en.*';
 
   /// Zero selects the highest available quality, without upscaling.
   final int maxHeight;
@@ -46,6 +55,12 @@ class DownloadOptions {
         maxHeight == 0 ? 'res' : 'res:$maxHeight',
         '--merge-output-format',
         'mkv',
+        if (subtitles) ...[
+          '--write-subs',
+          '--sub-langs',
+          subtitleLanguages,
+          '--embed-subs',
+        ],
       ],
     ];
   }
@@ -54,5 +69,6 @@ class DownloadOptions {
     'audioOnly': audioOnly,
     'maxHeight': maxHeight,
     'audioBitrate': audioBitrate,
+    'subtitles': subtitles,
   };
 }

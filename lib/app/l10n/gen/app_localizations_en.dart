@@ -397,4 +397,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeFromQueue => 'Remove from queue';
+
+  @override
+  String timeLeft(String time) {
+    return '$time left';
+  }
+
+  @override
+  String get includeSubtitles =>
+      'Include subtitles (Arabic and English, when available)';
+
+  @override
+  String get loadSubtitleFile => 'Load subtitle file…';
+
+  @override
+  String get pickFromPlaylist => 'Choose from a playlist or channel';
+
+  @override
+  String get notAPlaylist => 'This link is a single video, not a list.';
+
+  @override
+  String get selectAll => 'Select all';
+
+  @override
+  String downloadSelected(int count) {
+    return 'Download $count';
+  }
+
+  @override
+  String playlistQueued(int count) {
+    return 'Added $count to the queue.';
+  }
 }

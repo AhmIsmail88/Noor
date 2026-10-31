@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -367,16 +368,44 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     unawaited(_syncBackground());
     _saveTimer?.cancel();
     if (playing) {
-      _saveTimer = Timer.periodic(
-        const Duration(seconds: 5),
-        (_) => _saveProgress(),
-      );
+      _saveTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+        _saveProgress();
+        unawaited(_maybeCaptureThumbnail());
+      });
       _scheduleHide();
     } else {
       _saveProgress();
       unawaited(widget.library.flush());
       _hideTimer?.cancel();
       if (mounted) setState(() => _controlsVisible = true);
+    }
+  }
+
+  bool _thumbnailTried = false;
+
+  /// One frame per video, taken past the intro (10%, at most 30 s in), for
+  /// the library and downloads lists. Audio and streams are skipped.
+  Future<void> _maybeCaptureThumbnail() async {
+    if (_thumbnailTried || widget.onlineSource != null || _disposed) return;
+    final item = widget.library.findByPath(widget.path);
+    if (item == null || item.isAudio || item.thumbnailPath != null) {
+      _thumbnailTried = true;
+      return;
+    }
+    final duration = _player.state.duration;
+    if (duration <= Duration.zero || (_player.state.width ?? 0) <= 0) return;
+    var due = duration * 0.1;
+    if (due > const Duration(seconds: 30)) due = const Duration(seconds: 30);
+    if (_player.state.position < due) return;
+    _thumbnailTried = true;
+    try {
+      final jpeg = await _player.screenshot(format: 'image/jpeg');
+      // Some decoders return nothing or a blank frame; leave the icon then.
+      if (jpeg != null && jpeg.length > 2048) {
+        await widget.library.saveThumbnail(widget.path, jpeg);
+      }
+    } catch (e) {
+      debugPrint('NOOR thumbnail: $e');
     }
   }
 
@@ -801,7 +830,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
                     ),
                     _speedMenu(l),
                     ?_audioMenu(l),
-                    ?_subtitleMenu(l),
+                    _subtitleMenu(l),
                     IconButton(
                       tooltip: _fullscreen ? l.exitFullscreen : l.fullscreen,
                       onPressed: _toggleFullscreen,
@@ -1015,16 +1044,39 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget? _subtitleMenu(AppLocalizations l) {
+  /// Menu sentinel: never a real mpv track id.
+  static final _loadSubtitle = SubtitleTrack('noor-load-subtitle', null, null);
+  SubtitleTrack? _externalSubtitle;
+
+  Future<void> _pickSubtitle() async {
+    try {
+      final files = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['srt', 'vtt', 'ass', 'ssa'],
+      );
+      final path = files.firstOrNull?.path;
+      if (path == null || _disposed) return;
+      final track = SubtitleTrack.uri(path, title: p.basename(path));
+      await _player.setSubtitleTrack(track);
+      if (mounted) setState(() => _externalSubtitle = track);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    }
+  }
+
+  /// Always shown: an external SRT/VTT can be added to any video.
+  Widget _subtitleMenu(AppLocalizations l) {
     final tracks = _player.state.tracks.subtitle
         .where((t) => t.id != 'auto' && t.id != 'no')
         .toList();
-    if (tracks.isEmpty) return null;
     final current = _player.state.track.subtitle.id;
+    final external = _externalSubtitle;
     return PopupMenuButton<SubtitleTrack>(
       tooltip: l.subtitles,
       icon: const Icon(Icons.subtitles),
-      onSelected: _player.setSubtitleTrack,
+      onSelected: (track) => identical(track, _loadSubtitle)
+          ? unawaited(_pickSubtitle())
+          : _player.setSubtitleTrack(track),
       itemBuilder: (_) => [
         CheckedPopupMenuItem<SubtitleTrack>(
           value: SubtitleTrack.no(),
@@ -1037,6 +1089,21 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
             checked: tracks[i].id == current,
             child: Text(_trackName(l, i, tracks[i].title, tracks[i].language)),
           ),
+        if (external != null && !tracks.any((t) => t.id == external.id))
+          CheckedPopupMenuItem<SubtitleTrack>(
+            value: external,
+            checked: current == external.id,
+            child: Text(external.title ?? l.subtitles),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem<SubtitleTrack>(
+          value: _loadSubtitle,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.file_open_outlined),
+            title: Text(l.loadSubtitleFile),
+          ),
+        ),
       ],
     );
   }

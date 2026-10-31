@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:noor/data/library_controller.dart';
 import 'package:noor/data/media_item.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   late Directory dir;
@@ -52,6 +54,20 @@ void main() {
     await present.delete();
     await c.checkFiles();
     expect(c.isMissing(present.path), isTrue);
+  });
+
+  test('a captured thumbnail is stored and survives a reload', () async {
+    final c = controller();
+    final item = c.importPath('${dir.path}/clip.mp4');
+    final jpeg = Uint8List.fromList(List.filled(4096, 7));
+    await c.saveThumbnail(item.path, jpeg);
+    final saved = c.findByPath(item.path)!.thumbnailPath!;
+    expect(await File(saved).readAsBytes(), jpeg);
+    expect(p.isWithin(dir.path, saved), isTrue);
+    await c.flush();
+    final reloaded = controller();
+    await reloaded.load();
+    expect(reloaded.findByPath(item.path)!.thumbnailPath, saved);
   });
 
   test('short clips are not finished at zero or halfway', () {

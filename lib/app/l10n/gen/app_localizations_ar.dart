@@ -394,4 +394,34 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get removeFromQueue => 'إزالة من قائمة الانتظار';
+
+  @override
+  String timeLeft(String time) {
+    return 'متبقٍ $time';
+  }
+
+  @override
+  String get includeSubtitles => 'تضمين الترجمة (العربية والإنجليزية إن وُجدت)';
+
+  @override
+  String get loadSubtitleFile => 'فتح ملف ترجمة…';
+
+  @override
+  String get pickFromPlaylist => 'اختيار من قائمة تشغيل أو قناة';
+
+  @override
+  String get notAPlaylist => 'هذا الرابط فيديو واحد وليس قائمة.';
+
+  @override
+  String get selectAll => 'تحديد الكل';
+
+  @override
+  String downloadSelected(int count) {
+    return 'تحميل $count';
+  }
+
+  @override
+  String playlistQueued(int count) {
+    return 'أُضيف $count إلى قائمة الانتظار.';
+  }
 }

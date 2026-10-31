@@ -799,6 +799,54 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'إزالة من قائمة الانتظار'**
   String get removeFromQueue;
+
+  /// No description provided for @timeLeft.
+  ///
+  /// In ar, this message translates to:
+  /// **'متبقٍ {time}'**
+  String timeLeft(String time);
+
+  /// No description provided for @includeSubtitles.
+  ///
+  /// In ar, this message translates to:
+  /// **'تضمين الترجمة (العربية والإنجليزية إن وُجدت)'**
+  String get includeSubtitles;
+
+  /// No description provided for @loadSubtitleFile.
+  ///
+  /// In ar, this message translates to:
+  /// **'فتح ملف ترجمة…'**
+  String get loadSubtitleFile;
+
+  /// No description provided for @pickFromPlaylist.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختيار من قائمة تشغيل أو قناة'**
+  String get pickFromPlaylist;
+
+  /// No description provided for @notAPlaylist.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الرابط فيديو واحد وليس قائمة.'**
+  String get notAPlaylist;
+
+  /// No description provided for @selectAll.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحديد الكل'**
+  String get selectAll;
+
+  /// No description provided for @downloadSelected.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحميل {count}'**
+  String downloadSelected(int count);
+
+  /// No description provided for @playlistQueued.
+  ///
+  /// In ar, this message translates to:
+  /// **'أُضيف {count} إلى قائمة الانتظار.'**
+  String playlistQueued(int count);
 }
 
 class _AppLocalizationsDelegate

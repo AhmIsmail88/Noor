@@ -182,5 +182,34 @@
     }
   },
   "queueWaitingPaused": "تبدأ التحميلات المنتظرة بعد استكمال التحميل المتوقف أو إلغائه.",
-  "removeFromQueue": "إزالة من قائمة الانتظار"
+  "removeFromQueue": "إزالة من قائمة الانتظار",
+  "timeLeft": "متبقٍ {time}",
+  "@timeLeft": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "includeSubtitles": "تضمين الترجمة (العربية والإنجليزية إن وُجدت)",
+  "loadSubtitleFile": "فتح ملف ترجمة…",
+  "pickFromPlaylist": "اختيار من قائمة تشغيل أو قناة",
+  "notAPlaylist": "هذا الرابط فيديو واحد وليس قائمة.",
+  "selectAll": "تحديد الكل",
+  "downloadSelected": "تحميل {count}",
+  "@downloadSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "playlistQueued": "أُضيف {count} إلى قائمة الانتظار.",
+  "@playlistQueued": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

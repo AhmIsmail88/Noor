@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'library_controller.dart';
 import 'media_item.dart';
 import 'download_options.dart';
+import 'link_playlist.dart';
 import 'link_qualities.dart';
 import 'media_import_store.dart';
 
@@ -97,6 +98,10 @@ class OnlineMediaService extends ChangeNotifier {
       // 'rejected' is a failure no retry can fix: it is final, and must not
       // keep the Download button disabled the way a resumable failure does.
       !['completed', 'cancelled', 'rejected'].contains(_job!['state']);
+
+  /// The link of the transfer in progress (also while paused).
+  String? get currentUrl => hasTransfer ? (_job?['url'] as String?) : null;
+
   bool get canResume =>
       hasTransfer && (_job?['state'] == 'paused' || _job?['state'] == 'failed');
   bool get canPause =>
@@ -109,6 +114,10 @@ class OnlineMediaService extends ChangeNotifier {
   bool engineUpdating = false;
   OnlineStage stage = OnlineStage.idle;
   double? progress;
+
+  /// Bytes per second and time left of the running transfer, when known.
+  double? speed;
+  Duration? eta;
   String? error;
   MediaItem? lastDownload;
 
@@ -184,6 +193,22 @@ class OnlineMediaService extends ChangeNotifier {
     final waiting = busy || hasTransfer || engineUpdating || _launching;
     _changed();
     return waiting;
+  }
+
+  /// Queues several links with the same options (one save); the first one
+  /// starts at once when the slot is free.
+  Future<void> enqueueAll(
+    Iterable<String> inputs, {
+    DownloadOptions options = const DownloadOptions(),
+  }) async {
+    options.validate();
+    await loadHistory();
+    queue.addAll([
+      for (final input in inputs)
+        if (isWebUrl(input)) QueuedDownload(input.trim(), options),
+    ]);
+    await _persistQueue();
+    _changed();
   }
 
   void removeFromQueue(QueuedDownload item) {
@@ -338,6 +363,10 @@ class OnlineMediaService extends ChangeNotifier {
           .clamp(0, 1)
           .toDouble();
       error = stage == OnlineStage.failed ? _job!['error'] as String? : null;
+      final downloading = stage == OnlineStage.downloading;
+      speed = downloading ? (_job!['speed'] as num?)?.toDouble() : null;
+      final seconds = downloading ? (_job!['eta'] as num?)?.toInt() : null;
+      eta = seconds == null || seconds < 0 ? null : Duration(seconds: seconds);
       final path = _job!['path'];
       if (state == 'completed' && path is String && path.isNotEmpty) {
         if (await _channel.invokeMethod<bool>('exists', {'uri': path}) ==
@@ -462,6 +491,7 @@ class OnlineMediaService extends ChangeNotifier {
       audioOnly: job['audioOnly'] == true,
       maxHeight: (job['maxHeight'] as num?)?.toInt() ?? 720,
       audioBitrate: (job['audioBitrate'] as num?)?.toInt() ?? 192,
+      subtitles: job['subtitles'] == true,
     );
     for (var attempt = 0; ; attempt++) {
       try {
@@ -571,6 +601,8 @@ class OnlineMediaService extends ChangeNotifier {
     _cancelled = false;
     error = null;
     progress = null;
+    speed = null;
+    eta = null;
     stage = OnlineStage.preparing;
     _changed();
     try {
@@ -601,6 +633,52 @@ class OnlineMediaService extends ChangeNotifier {
     _resolving = true;
     try {
       return await _resolve(input);
+    } finally {
+      _resolving = false;
+    }
+  }
+
+  /// The videos of a playlist, channel or profile link (up to 500), without
+  /// extracting each one. Empty entries mean the link is a single video.
+  Future<LinkPlaylist> listPlaylist(String input) async {
+    if (busy || engineUpdating) {
+      throw StateError('Another operation is in progress.');
+    }
+    _resolving = true;
+    try {
+      return await _operation(() async {
+        final source = input.trim();
+        if (!isWebUrl(source)) {
+          throw const FormatException('Enter a valid HTTP or HTTPS link.');
+        }
+        if (isDirectMediaUrl(source)) {
+          return const LinkPlaylist(title: '', entries: []);
+        }
+        final Map<dynamic, dynamic> data;
+        if (Platform.isAndroid) {
+          data =
+              await _channel.invokeMapMethod<String, dynamic>('playlist', {
+                'url': source,
+              }) ??
+              {};
+        } else if (Platform.isWindows) {
+          data = jsonDecode(
+            await _windows(source, [
+              // Overrides the default --no-playlist (last one wins).
+              '--yes-playlist',
+              '--flat-playlist',
+              '--playlist-end',
+              '500',
+              '--dump-single-json',
+            ]),
+          ) as Map<dynamic, dynamic>;
+        } else {
+          throw UnsupportedError(
+            'Online sources are available on Android and Windows.',
+          );
+        }
+        return LinkPlaylist.fromInfo(data);
+      });
     } finally {
       _resolving = false;
     }
@@ -709,7 +787,7 @@ class OnlineMediaService extends ChangeNotifier {
         '--write-info-json',
         '--newline',
         '--progress-template',
-        'download:__NOOR_PROGRESS__%(progress._percent_str)s',
+        'download:__NOOR_PROGRESS__%(progress._percent_str)s|%(progress.speed)s|%(progress.eta)s',
         '--output',
         p.join(directory.path, 'media.%(ext)s'),
       ]);
@@ -963,10 +1041,11 @@ class OnlineMediaService extends ChangeNotifier {
         .transform(const LineSplitter())
         .forEach((line) {
           if (line.contains('__NOOR_PROGRESS__')) {
-            final match = RegExp(r'__NOOR_PROGRESS__\s*([\d.]+)%')
-                .firstMatch(line);
-            if (match != null) {
-              progress = (double.parse(match.group(1)!) / 100).clamp(0, 1);
+            final parsed = parseProgressLine(line);
+            if (parsed != null) {
+              progress = parsed.fraction;
+              speed = parsed.speed;
+              eta = parsed.eta;
               stage = OnlineStage.downloading;
               _changed();
               unawaited(_tray());
@@ -1149,6 +1228,7 @@ class QueuedDownload {
       audioOnly: json['audioOnly'] == true,
       maxHeight: (json['maxHeight'] as num?)?.toInt() ?? 720,
       audioBitrate: (json['audioBitrate'] as num?)?.toInt() ?? 192,
+      subtitles: json['subtitles'] == true,
     );
     try {
       options.validate();
@@ -1157,4 +1237,24 @@ class QueuedDownload {
     }
     return QueuedDownload(url, options);
   }
+}
+
+/// Parses `__NOOR_PROGRESS__ 45.3%|1234.5|12` (speed in B/s, eta in s;
+/// either may be `NA`) printed by the Windows engine's progress template.
+({double fraction, double? speed, Duration? eta})? parseProgressLine(
+  String line,
+) {
+  final match = RegExp(r'__NOOR_PROGRESS__\s*([\d.]+)%(?:\|([^|]*)\|(\S*))?')
+      .firstMatch(line);
+  if (match == null) return null;
+  final fraction = (double.parse(match.group(1)!) / 100).clamp(0.0, 1.0);
+  final speed = double.tryParse(match.group(2)?.trim() ?? '');
+  final seconds = double.tryParse(match.group(3)?.trim() ?? '');
+  return (
+    fraction: fraction,
+    speed: speed == null || speed <= 0 ? null : speed,
+    eta: seconds == null || seconds < 0
+        ? null
+        : Duration(seconds: seconds.round()),
+  );
 }

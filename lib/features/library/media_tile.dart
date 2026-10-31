@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/format.dart';
 import '../../app/l10n/gen/app_localizations.dart';
 import '../../data/media_item.dart';
+import 'media_thumbnail.dart';
 
 class MediaTile extends StatelessWidget {
   const MediaTile({
@@ -35,17 +36,19 @@ class MediaTile extends StatelessWidget {
       if (exists && item.sizeBytes != null) formatSize(item.sizeBytes!),
     ].join('  •  ');
 
+    final avatar = CircleAvatar(
+      backgroundColor: scheme.primaryContainer,
+      foregroundColor: scheme.onPrimaryContainer,
+      child: Icon(
+        exists
+            ? (item.isAudio ? Icons.audiotrack : Icons.play_arrow_rounded)
+            : Icons.error_outline,
+      ),
+    );
     return ListTile(
       enabled: exists,
-      leading: CircleAvatar(
-        backgroundColor: scheme.primaryContainer,
-        foregroundColor: scheme.onPrimaryContainer,
-        child: Icon(
-          exists
-              ? (item.isAudio ? Icons.audiotrack : Icons.play_arrow_rounded)
-              : Icons.error_outline,
-        ),
-      ),
+      // A missing file shows the error icon, not its last frame.
+      leading: exists ? MediaThumbnail(item: item, fallback: avatar) : avatar,
       title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

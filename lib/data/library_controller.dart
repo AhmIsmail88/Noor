@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -273,6 +274,19 @@ class LibraryController extends ChangeNotifier {
     item.lastPlayedAt = DateTime.now();
     _scheduleSave();
     if (notify) notifyListeners();
+  }
+
+  /// Stores a JPEG frame for [path] next to the library file.
+  Future<void> saveThumbnail(String path, Uint8List jpeg) async {
+    final item = _items[path];
+    if (item == null || _readOnly) return;
+    final name = '${sha1.convert(utf8.encode(path))}.jpg';
+    final file = File(p.join(_file.parent.path, 'thumbnails', name));
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(jpeg, flush: true);
+    item.thumbnailPath = file.path;
+    _scheduleSave();
+    if (!_disposed) notifyListeners();
   }
 
   void toggleFavorite(String path) {

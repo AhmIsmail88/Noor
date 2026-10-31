@@ -28,6 +28,7 @@ class _LibraryPageState extends State<LibraryPage> {
       ..showSnackBar(
         SnackBar(
           content: Text(l.removedFromLibrary(item.title)),
+          persist: false, // otherwise it never hides (it has an action)
           action: SnackBarAction(
             label: l.undo,
             onPressed: () => widget.library.restore(item),

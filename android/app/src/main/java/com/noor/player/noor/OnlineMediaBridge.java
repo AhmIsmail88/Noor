@@ -128,7 +128,8 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
             });
             return;
         }
-        if (!call.method.equals("resolve") && !call.method.equals("download") && !call.method.equals("publish")) {
+        if (!call.method.equals("resolve") && !call.method.equals("download") && !call.method.equals("publish")
+                && !call.method.equals("playlist")) {
             result.notImplemented(); return;
         }
         if (!busy.compareAndSet(false, true)) {
@@ -139,7 +140,7 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
             cancelled.set(true);
             YoutubeDL.getInstance().destroyProcessById(processId);
         };
-        if (call.method.equals("resolve")) main.postDelayed(timeout, 600000);
+        if (call.method.equals("resolve") || call.method.equals("playlist")) main.postDelayed(timeout, 600000);
         worker.execute(() -> {
             try {
                 if (call.method.equals("publish")) {
@@ -157,13 +158,37 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
                 if (cancelled.get()) throw new InterruptedException("Cancelled");
                 YoutubeDLRequest request = new YoutubeDLRequest(url);
                 request.addOption("--ignore-config");
-                request.addOption("--no-playlist");
+                // A playlist listing must not also pass --no-playlist: option order is
+                // not guaranteed by the request builder.
+                if (!call.method.equals("playlist")) request.addOption("--no-playlist");
                 request.addOption("--socket-timeout", "20");
                 request.addOption("--retries", "1");
                 request.addOption("--extractor-retries", "1");
                 request.addOption("--max-filesize", "2G");
                 Map<String, Object> output;
-                if (call.method.equals("resolve")) {
+                if (call.method.equals("playlist")) {
+                    request.addOption("--yes-playlist");
+                    request.addOption("--flat-playlist");
+                    request.addOption("--playlist-end", "500");
+                    request.addOption("--dump-single-json");
+                    YoutubeDLResponse response = YoutubeDL.getInstance().execute(request, processId, null);
+                    JSONObject data = new JSONObject(response.getOut());
+                    output = new HashMap<>();
+                    output.put("_type", data.optString("_type"));
+                    output.put("title", data.optString("title"));
+                    java.util.List<Map<String, Object>> entries = new java.util.ArrayList<>();
+                    org.json.JSONArray list = data.optJSONArray("entries");
+                    if (list != null) for (int i = 0; i < list.length(); i++) {
+                        JSONObject e = list.optJSONObject(i);
+                        if (e == null) continue;
+                        Map<String, Object> entry = new HashMap<>();
+                        for (String key : new String[]{"_type", "url", "webpage_url", "title"})
+                            if (e.has(key) && !e.isNull(key)) entry.put(key, e.optString(key));
+                        if (e.has("duration") && !e.isNull("duration")) entry.put("duration", e.optDouble("duration"));
+                        entries.add(entry);
+                    }
+                    output.put("entries", entries);
+                } else if (call.method.equals("resolve")) {
                     request.addOption("--format", "best[height<=720]/best");
                     request.addOption("--dump-single-json");
                     request.addOption("--skip-download");
@@ -214,6 +239,12 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
                     } else {
                         request.addOption("--format-sort", height == 0 ? "res" : "res:" + height);
                         request.addOption("--merge-output-format", "mkv");
+                        if (Boolean.TRUE.equals(call.argument("subtitles"))) {
+                            // Same as DownloadOptions.arguments (Dart).
+                            request.addOption("--write-subs");
+                            request.addOption("--sub-langs", "ar.*,en.*");
+                            request.addOption("--embed-subs");
+                        }
                     }
                     String path = call.argument("directory");
                     if (path == null) throw new IllegalArgumentException("No output directory");
@@ -230,7 +261,11 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
                         main.post(() -> {
                             if (sink != null) {
                                 Map<String, Object> progress = new HashMap<>();
-                                progress.put("progress", percent); sink.success(progress);
+                                progress.put("progress", percent);
+                                progress.put("eta", eta);
+                                Double speed = speedOf(line);
+                                if (speed != null) progress.put("speed", speed);
+                                sink.success(progress);
                             }
                         });
                         return kotlin.Unit.INSTANCE;
@@ -264,6 +299,20 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
                 main.removeCallbacks(timeout);
             }
         });
+    }
+
+    private static final java.util.regex.Pattern SPEED =
+        java.util.regex.Pattern.compile("at\\s+~?\\s*([\\d.]+)\\s*([KMGT]?)(i?)B/s");
+
+    /** Bytes per second from a progress line such as "... at 1.23MiB/s ETA 00:07". */
+    static Double speedOf(String line) {
+        if (line == null) return null;
+        java.util.regex.Matcher m = SPEED.matcher(line);
+        if (!m.find()) return null;
+        double base = m.group(3).isEmpty() ? 1000 : 1024;
+        int power = "KMGT".indexOf(m.group(2)) + 1; // "" -> 0
+        try { return Double.parseDouble(m.group(1)) * Math.pow(base, power); }
+        catch (NumberFormatException e) { return null; }
     }
 
     private Map<String, Object> publish(MethodCall call) throws Exception {

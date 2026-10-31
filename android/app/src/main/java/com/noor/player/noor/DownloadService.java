@@ -55,6 +55,10 @@ public final class DownloadService extends Service {
                 try {
                     Object progress = ((Map<?, ?>)event).get("progress");
                     if (progress instanceof Number) job.put("progress", ((Number)progress).doubleValue());
+                    Object eta = ((Map<?, ?>)event).get("eta");
+                    if (eta instanceof Number) job.put("eta", ((Number)eta).longValue()); else job.remove("eta");
+                    Object speed = ((Map<?, ?>)event).get("speed");
+                    if (speed instanceof Number) job.put("speed", ((Number)speed).doubleValue()); else job.remove("speed");
                     if (System.currentTimeMillis() - lastUpdate > 1000) {
                         lastUpdate = System.currentTimeMillis(); state("downloading");
                     }
@@ -147,7 +151,11 @@ public final class DownloadService extends Service {
         if (!wake.isHeld()) wake.acquire();
         state("preparing");
         Map<String, Object> args = new HashMap<>();
-        for (String key : new String[]{"url", "directory", "audioOnly", "maxHeight", "audioBitrate"}) args.put(key, job.get(key));
+        // opt(): jobs saved before a key existed (e.g. "subtitles") must still resume.
+        for (String key : new String[]{"url", "directory", "audioOnly", "maxHeight", "audioBitrate", "subtitles"}) {
+            Object value = job.opt(key);
+            if (value != null) args.put(key, value);
+        }
         engine.onMethodCall(new MethodCall("download", args), new MethodChannel.Result() {
             public void success(Object value) {
                 if (stopping) { stopped(); return; }

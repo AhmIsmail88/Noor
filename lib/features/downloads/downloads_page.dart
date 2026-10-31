@@ -9,6 +9,8 @@ import '../../data/library_controller.dart';
 import '../../data/online_error.dart';
 import '../../data/online_media_service.dart';
 import '../../data/download_options.dart';
+import '../../data/link_playlist.dart';
+import '../library/media_thumbnail.dart';
 import '../../data/link_qualities.dart';
 import '../../app/format.dart';
 
@@ -28,6 +30,7 @@ class _DownloadsPageState extends State<DownloadsPage> {
   bool _audioOnly = false;
   int _height = 720;
   int _bitrate = 192;
+  bool _subtitles = false;
 
   /// What the current link really offers, after "Show available qualities".
   LinkQualities? _qualities;
@@ -79,6 +82,46 @@ class _DownloadsPageState extends State<DownloadsPage> {
     }
   }
 
+  Future<void> _pickFromPlaylist() async {
+    final l = AppLocalizations.of(context)!;
+    final source = _url.text.trim();
+    if (!isWebUrl(source)) {
+      setState(() => _validation = l.invalidLink);
+      return;
+    }
+    setState(() => _validation = null);
+    FocusScope.of(context).unfocus();
+    final LinkPlaylist list;
+    try {
+      list = await widget.online.listPlaylist(source);
+    } catch (_) {
+      return; // Service exposes the error.
+    }
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (list.entries.isEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(l.notAPlaylist)));
+      return;
+    }
+    final urls = await showDialog<List<String>>(
+      context: context,
+      builder: (_) => _PlaylistDialog(list: list),
+    );
+    if (urls == null || urls.isEmpty || !mounted) return;
+    await widget.online.enqueueAll(
+      urls,
+      options: DownloadOptions(
+        audioOnly: _audioOnly,
+        maxHeight: _height,
+        audioBitrate: _bitrate,
+        subtitles: _subtitles,
+      ),
+    );
+    messenger.showSnackBar(
+      SnackBar(content: Text(l.playlistQueued(urls.length))),
+    );
+  }
+
   Future<void> _enqueue() async {
     final l = AppLocalizations.of(context)!;
     final source = _url.text.trim();
@@ -95,6 +138,7 @@ class _DownloadsPageState extends State<DownloadsPage> {
           audioOnly: _audioOnly,
           maxHeight: _height,
           audioBitrate: _bitrate,
+          subtitles: _subtitles,
         ),
       );
       if (!mounted) return;
@@ -141,6 +185,7 @@ class _DownloadsPageState extends State<DownloadsPage> {
             audioOnly: _audioOnly,
             maxHeight: _height,
             audioBitrate: _bitrate,
+            subtitles: _subtitles,
           ),
         );
         if (mounted) {
@@ -148,6 +193,9 @@ class _DownloadsPageState extends State<DownloadsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l.downloadSaved),
+              // With an action, Flutter keeps a snackbar until dismissed,
+              // which also holds back every later message in the queue.
+              persist: false,
               action: SnackBarAction(
                 label: l.play,
                 onPressed: () => context.openPlayer(item.path),
@@ -216,13 +264,19 @@ class _DownloadsPageState extends State<DownloadsPage> {
                   ),
                 ),
               ),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  onPressed: online.busy ? null : _probe,
-                  icon: const Icon(Icons.tune),
-                  label: Text(l.checkQualities),
-                ),
+              Wrap(
+                children: [
+                  TextButton.icon(
+                    onPressed: online.busy ? null : _probe,
+                    icon: const Icon(Icons.tune),
+                    label: Text(l.checkQualities),
+                  ),
+                  TextButton.icon(
+                    onPressed: online.busy ? null : _pickFromPlaylist,
+                    icon: const Icon(Icons.playlist_play),
+                    label: Text(l.pickFromPlaylist),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<bool>(
@@ -290,6 +344,15 @@ class _DownloadsPageState extends State<DownloadsPage> {
                         : (value) => setState(() => _height = value!),
                   ),
                 ),
+              if (!_audioOnly)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.includeSubtitles),
+                  value: _subtitles,
+                  onChanged: online.busy
+                      ? null
+                      : (v) => setState(() => _subtitles = v),
+                ),
               const SizedBox(height: 8),
               Text(
                 _audioOnly ? l.audioFormatHint : l.videoQualityHint,
@@ -351,23 +414,7 @@ class _DownloadsPageState extends State<DownloadsPage> {
               // A paused or failed transfer is not busy but must stay visible.
               if (online.busy || online.hasTransfer) ...[
                 const SizedBox(height: 20),
-                Text(
-                  online.stage == OnlineStage.paused ||
-                          online.stage == OnlineStage.failed
-                      ? l.downloadPaused
-                      : online.stage == OnlineStage.waiting
-                      ? l.downloadWaiting
-                      : online.stage == OnlineStage.downloading
-                      ? l.downloadingVideo
-                      : l.preparingLink,
-                ),
-                const SizedBox(height: 8),
-                // Only an active operation animates; a paused one holds still.
-                LinearProgressIndicator(
-                  value: online.busy ? online.progress : online.progress ?? 0,
-                ),
-                if (online.progress != null)
-                  Text('${(online.progress! * 100).round()}%'),
+                _TransferCard(online: online),
               ],
               if (online.stage == OnlineStage.cancelled) ...[
                 const SizedBox(height: 16),
@@ -461,10 +508,13 @@ class _DownloadsPageState extends State<DownloadsPage> {
               for (final item in online.downloads)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    item.isAudio
-                        ? Icons.audio_file_outlined
-                        : Icons.video_file_outlined,
+                  leading: MediaThumbnail(
+                    item: item,
+                    fallback: Icon(
+                      item.isAudio
+                          ? Icons.audio_file_outlined
+                          : Icons.video_file_outlined,
+                    ),
                   ),
                   title: Text(
                     item.title,
@@ -534,3 +584,150 @@ bool _streamingMayHelp(OnlineErrorKind kind) => const {
   OnlineErrorKind.storage,
   OnlineErrorKind.other,
 }.contains(kind);
+
+/// The running (or paused) transfer: link, progress, speed and time left.
+class _TransferCard extends StatelessWidget {
+  const _TransferCard({required this.online});
+  final OnlineMediaService online;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final stats = [
+      if (online.progress != null) '${(online.progress! * 100).round()}%',
+      if (online.speed != null) '${formatSize(online.speed!.round())}/s',
+      if (online.eta != null) l.timeLeft(formatDuration(online.eta!)),
+    ];
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              online.stage == OnlineStage.paused ||
+                      online.stage == OnlineStage.failed
+                  ? l.downloadPaused
+                  : online.stage == OnlineStage.waiting
+                  ? l.downloadWaiting
+                  : online.stage == OnlineStage.downloading
+                  ? l.downloadingVideo
+                  : l.preparingLink,
+              style: theme.textTheme.titleSmall,
+            ),
+            if (online.currentUrl != null)
+              Text(
+                online.currentUrl!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textDirection: TextDirection.ltr,
+                style: theme.textTheme.bodySmall,
+              ),
+            const SizedBox(height: 12),
+            // Only an active operation animates; a paused one holds still.
+            LinearProgressIndicator(
+              value: online.busy ? online.progress : online.progress ?? 0,
+            ),
+            if (stats.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                stats.join('  ·  '),
+                textDirection: TextDirection.ltr,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Choose which videos of a playlist/channel to download.
+class _PlaylistDialog extends StatefulWidget {
+  const _PlaylistDialog({required this.list});
+  final LinkPlaylist list;
+
+  @override
+  State<_PlaylistDialog> createState() => _PlaylistDialogState();
+}
+
+class _PlaylistDialogState extends State<_PlaylistDialog> {
+  late final Set<String> _chosen = {for (final e in widget.list.entries) e.url};
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final entries = widget.list.entries;
+    final all = _chosen.length == entries.length;
+    return AlertDialog(
+      title: Text(
+        widget.list.title.isEmpty ? l.pickFromPlaylist : widget.list.title,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      contentPadding: const EdgeInsets.only(top: 12),
+      content: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CheckboxListTile(
+              value: all,
+              title: Text(l.selectAll),
+              onChanged: (_) => setState(
+                () => all
+                    ? _chosen.clear()
+                    : _chosen.addAll(entries.map((e) => e.url)),
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: entries.length,
+                itemBuilder: (context, i) {
+                  final e = entries[i];
+                  return CheckboxListTile(
+                    value: _chosen.contains(e.url),
+                    title: Text(
+                      e.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: e.duration == null
+                        ? null
+                        : Text(formatDuration(e.duration!)),
+                    onChanged: (on) => setState(
+                      () => on == true
+                          ? _chosen.add(e.url)
+                          : _chosen.remove(e.url),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+        FilledButton(
+          onPressed: _chosen.isEmpty
+              ? null
+              : () => Navigator.pop(context, [
+                  // Keep the list order, not the tap order.
+                  for (final e in entries)
+                    if (_chosen.contains(e.url)) e.url,
+                ]),
+          child: Text(l.downloadSelected(_chosen.length)),
+        ),
+      ],
+    );
+  }
+}

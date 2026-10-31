@@ -3,6 +3,24 @@ import 'package:noor/data/download_options.dart';
 import 'package:noor/data/media_item.dart';
 
 void main() {
+  test('subtitles are embedded only for video downloads', () {
+    const video = DownloadOptions(subtitles: true);
+    expect(
+      video.arguments,
+      containsAllInOrder([
+        '--write-subs',
+        '--sub-langs',
+        DownloadOptions.subtitleLanguages,
+        '--embed-subs',
+      ]),
+    );
+    expect(video.arguments, isNot(contains('--write-auto-subs')));
+    expect(video.toMap()['subtitles'], isTrue);
+    const audio = DownloadOptions(audioOnly: true, subtitles: true);
+    expect(audio.arguments, isNot(contains('--write-subs')));
+    expect(const DownloadOptions().arguments, isNot(contains('--write-subs')));
+  });
+
   test('each video quality caps both separate and combined formats', () {
     for (final height in DownloadOptions.heights.where((h) => h > 0)) {
       final options = DownloadOptions(maxHeight: height);

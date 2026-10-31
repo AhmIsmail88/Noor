@@ -13,6 +13,7 @@ class MediaItem {
     this.isDownload = false,
     this.isAudio = false,
     this.savedLocation,
+    this.thumbnailPath,
   });
 
   final String path; // unique key
@@ -28,6 +29,9 @@ class MediaItem {
   final bool isDownload;
   final bool isAudio;
   final String? savedLocation;
+
+  /// A frame captured by the player (see LibraryController.saveThumbnail).
+  String? thumbnailPath;
   bool get isContentUri => Uri.tryParse(path)?.scheme == 'content';
 
   double get progress =>
@@ -53,6 +57,7 @@ class MediaItem {
     'isDownload': isDownload,
     'isAudio': isAudio,
     'savedLocation': savedLocation,
+    'thumbnailPath': thumbnailPath,
   };
 
   static MediaItem? fromJson(Map<String, dynamic> j) {
@@ -73,6 +78,7 @@ class MediaItem {
       isDownload: j['isDownload'] == true,
       isAudio: j['isAudio'] == true,
       savedLocation: j['savedLocation'] as String?,
+      thumbnailPath: j['thumbnailPath'] as String?,
     );
   }
 }

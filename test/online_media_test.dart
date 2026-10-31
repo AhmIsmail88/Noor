@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -112,6 +113,42 @@ void main() {
     service.dispose();
   });
 
+  test('queued links survive a restart in order', () async {
+    final first = FakeOnline(library, dir)..pausedTransfer = true;
+    expect(
+      await first.enqueue(
+        'https://example.org/a',
+        options: const DownloadOptions(maxHeight: 360),
+      ),
+      isTrue,
+    );
+    await first.enqueue(
+      'https://example.org/b',
+      options: const DownloadOptions(audioOnly: true, audioBitrate: 320),
+    );
+    first.dispose();
+    // A damaged entry is skipped, not fatal.
+    final file = File('${dir.path}/queue.json');
+    final saved = jsonDecode(await file.readAsString()) as List;
+    await file.writeAsString(
+      jsonEncode([
+        ...saved,
+        {'url': 'not a link'},
+      ]),
+    );
+
+    final second = FakeOnline(library, dir)..pausedTransfer = true;
+    await second.loadHistory();
+    expect(second.queue.map((q) => q.url), [
+      'https://example.org/a',
+      'https://example.org/b',
+    ]);
+    expect(second.queue.first.options.maxHeight, 360);
+    expect(second.queue.last.options.audioOnly, isTrue);
+    expect(second.transfers, 0);
+    second.dispose();
+  });
+
   testWidgets(
     'Streaming is independently available even when downloading is possible',
     (tester) async {
@@ -169,20 +206,36 @@ void main() {
       expect(service.transfers, 2);
       expect(service.lastOptions!.audioOnly, isTrue);
       expect(service.lastOptions!.audioBitrate, 320);
-      // A paused transfer must block a second download, but allow streaming.
+      // A paused transfer holds the slot: Download becomes Add to queue,
+      // and Streaming stays available.
       service.pausedTransfer = true;
       service.notifyListeners();
       await tester.pumpAndSettle();
-      final downloadButton = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Download audio'),
-      );
-      expect(downloadButton.onPressed, isNull);
+      expect(find.widgetWithText(FilledButton, 'Download audio'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Add to queue'), findsOneWidget);
       await tester.ensureVisible(find.text('Streaming — watch online'));
       await tester.tap(find.text('Streaming — watch online'));
       await tester.pumpAndSettle();
       expect(find.text('Watching Video'), findsOneWidget);
       expect(service.resolves, 1);
       expect(service.transfers, 2);
+      router.pop();
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Add to queue'));
+      await tester.tap(find.text('Add to queue'));
+      await tester.pumpAndSettle();
+      expect(service.queue, hasLength(1));
+      expect(service.queue.single.options.audioBitrate, 320);
+      expect(service.transfers, 2, reason: 'held while the transfer is paused');
+      expect(find.text('Waiting in queue (1)'), findsOneWidget);
+
+      // Freeing the slot starts the queued link automatically.
+      service.pausedTransfer = false;
+      service.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(service.transfers, 3);
+      expect(service.queue, isEmpty);
       await tester.pumpWidget(const SizedBox.shrink());
       router.dispose();
       service.dispose();

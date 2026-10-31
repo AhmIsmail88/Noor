@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'library_controller.dart';
 import 'media_item.dart';
 import 'download_options.dart';
+import 'link_qualities.dart';
 import 'media_import_store.dart';
 
 enum OnlineStage {
@@ -105,6 +106,7 @@ class OnlineMediaService extends ChangeNotifier {
   bool busy = false;
   bool _cancelled = false;
   bool _resolving = false;
+  bool engineUpdating = false;
   OnlineStage stage = OnlineStage.idle;
   double? progress;
   String? error;
@@ -112,6 +114,109 @@ class OnlineMediaService extends ChangeNotifier {
 
   void _changed() {
     if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void notifyListeners() {
+    super.notifyListeners();
+    // Every state change may have freed the single transfer slot.
+    _pumpQueue();
+  }
+
+  /// Links waiting for the current transfer; they download one at a time,
+  /// in order, and survive restarts. A paused or resumable failed transfer
+  /// holds the queue until it is resumed or cancelled.
+  final List<QueuedDownload> queue = [];
+  bool _launching = false;
+
+  /// A queued link is being handed to [download]; the slot is taken.
+  bool get startingQueued => _launching;
+  bool _queueLoaded = false;
+
+  File? get _queueFile =>
+      _root == null ? null : File(p.join(_root!.path, 'queue.json'));
+
+  Future<void> _loadQueue() async {
+    if (_queueLoaded) return;
+    _queueLoaded = true;
+    final file = _queueFile;
+    if (file == null || !await file.exists()) return;
+    try {
+      final data = jsonDecode(await file.readAsString());
+      if (data is List) {
+        for (final entry in data) {
+          final item = entry is Map ? QueuedDownload.fromJson(entry) : null;
+          if (item != null) queue.add(item);
+        }
+      }
+    } catch (error) {
+      debugPrint('Ignoring unreadable download queue: $error');
+    }
+  }
+
+  Future<void> _persistQueue() async {
+    final file = _queueFile;
+    if (file == null) return;
+    try {
+      await file.parent.create(recursive: true);
+      final temp = File('${file.path}.tmp');
+      await temp.writeAsString(
+        jsonEncode([for (final item in queue) item.toJson()]),
+        flush: true,
+      );
+      await temp.rename(file.path);
+    } catch (error) {
+      debugPrint('Download queue save failed: $error');
+    }
+  }
+
+  /// Starts [input] now when the slot is free, otherwise queues it.
+  /// Returns true when it was queued.
+  Future<bool> enqueue(
+    String input, {
+    DownloadOptions options = const DownloadOptions(),
+  }) async {
+    options.validate();
+    if (!isWebUrl(input)) throw const FormatException('Invalid URL');
+    await loadHistory();
+    queue.add(QueuedDownload(input.trim(), options));
+    await _persistQueue();
+    final waiting = busy || hasTransfer || engineUpdating || _launching;
+    _changed();
+    return waiting;
+  }
+
+  void removeFromQueue(QueuedDownload item) {
+    if (queue.remove(item)) {
+      unawaited(_persistQueue());
+      _changed();
+    }
+  }
+
+  void _pumpQueue() {
+    if (_launching ||
+        queue.isEmpty ||
+        busy ||
+        hasTransfer ||
+        engineUpdating ||
+        _disposed ||
+        _root == null) {
+      return;
+    }
+    _launching = true;
+    final next = queue.removeAt(0);
+    unawaited(_persistQueue());
+    // Errors are shown through [error]; the queue then moves on unless the
+    // transfer is resumable, which keeps hasTransfer true.
+    unawaited(
+      download(
+        next.url,
+        options: next.options,
+      ).then<void>((_) {}, onError: (Object _) {}).whenComplete(() {
+        _launching = false;
+        _changed();
+      }),
+    );
   }
 
   Future<void> loadHistory() async {
@@ -153,8 +258,11 @@ class OnlineMediaService extends ChangeNotifier {
           }
         }
       }
+      await _loadQueue();
+      // Only the first load changes state. Notifying on later calls would
+      // happen synchronously inside a caller's initState (a build).
+      _changed();
     }
-    _changed();
   }
 
   Future<void> reconcileDownloads() async {
@@ -288,7 +396,7 @@ class OnlineMediaService extends ChangeNotifier {
     options.validate();
     if (!isWebUrl(input)) throw const FormatException('Invalid URL');
     await loadHistory();
-    if (busy || hasTransfer) {
+    if (busy || hasTransfer || engineUpdating) {
       throw StateError('Finish or cancel the current download first.');
     }
     if (Platform.isAndroid) {
@@ -368,6 +476,7 @@ class OnlineMediaService extends ChangeNotifier {
         await _persistJob();
         await _cleanFinishedJob();
         await _tray();
+        _changed();
         return item;
       } catch (e) {
         if (_pausing || _cancelled || attempt >= 4 || _isPermanent(e)) {
@@ -486,10 +595,49 @@ class OnlineMediaService extends ChangeNotifier {
   }
 
   Future<ResolvedMedia> resolve(String input) async {
-    if (busy) throw StateError('Another operation is in progress.');
+    if (busy || engineUpdating) {
+      throw StateError('Another operation is in progress.');
+    }
     _resolving = true;
     try {
       return await _resolve(input);
+    } finally {
+      _resolving = false;
+    }
+  }
+
+  /// Lists the qualities a link offers, without downloading anything.
+  /// Uses the resolve path so Cancel and the watchdog stop only this.
+  Future<LinkQualities> probe(String input) async {
+    if (busy || engineUpdating) {
+      throw StateError('Another operation is in progress.');
+    }
+    _resolving = true;
+    try {
+      return await _operation(() async {
+        final source = input.trim();
+        if (!isWebUrl(source)) {
+          throw const FormatException('Enter a valid HTTP or HTTPS link.');
+        }
+        if (isDirectMediaUrl(source)) return const LinkQualities(caps: {});
+        final Map<dynamic, dynamic> data;
+        if (Platform.isAndroid) {
+          data =
+              await _channel.invokeMapMethod<String, dynamic>('resolve', {
+                'url': source,
+              }) ??
+              {};
+        } else if (Platform.isWindows) {
+          data = jsonDecode(
+            await _windows(source, ['--dump-single-json', '--skip-download']),
+          ) as Map<dynamic, dynamic>;
+        } else {
+          throw UnsupportedError(
+            'Online sources are available on Android and Windows.',
+          );
+        }
+        return LinkQualities.fromInfo(data);
+      });
     } finally {
       _resolving = false;
     }
@@ -761,9 +909,7 @@ class OnlineMediaService extends ChangeNotifier {
   }
 
   Future<String> _windows(String source, List<String> options) async {
-    final engines = Directory(
-      p.join(p.dirname(Platform.resolvedExecutable), 'engines'),
-    );
+    final engines = _windowsEngines;
     final executable = File(p.join(engines.path, 'yt-dlp.exe'));
     final node = File(p.join(engines.path, 'node.exe'));
     if (!await executable.exists() || !await node.exists()) {
@@ -902,6 +1048,70 @@ class OnlineMediaService extends ChangeNotifier {
     }
   }
 
+  static Directory get _windowsEngines =>
+      Directory(p.join(p.dirname(Platform.resolvedExecutable), 'engines'));
+
+  /// The extractor (yt-dlp) version, or null when it is unavailable.
+  Future<String?> engineVersion() async {
+    try {
+      if (Platform.isAndroid) {
+        // The Android library reports "yt-dlp 2026.10.21".
+        final name = await _channel.invokeMethod<String>('engineVersion');
+        return name?.replaceFirst(RegExp(r'^yt-dlp\s+'), '').trim();
+      }
+      if (Platform.isWindows) {
+        final exe = File(p.join(_windowsEngines.path, 'yt-dlp.exe'));
+        if (!await exe.exists()) return null;
+        final result = await Process.run(exe.path, [
+          '--ignore-config',
+          '--version',
+        ], runInShell: false);
+        return result.exitCode == 0 ? '${result.stdout}'.trim() : null;
+      }
+    } catch (e) {
+      debugPrint('Engine version: $e');
+    }
+    return null;
+  }
+
+  /// Sites change often; a current extractor fixes most "worked yesterday"
+  /// failures. Never runs during a transfer, which uses the same files.
+  Future<({String? before, String? after})> updateEngine() async {
+    if (busy || hasTransfer || engineUpdating) {
+      throw StateError('Finish or cancel the current download first.');
+    }
+    engineUpdating = true;
+    _changed();
+    try {
+      final before = await engineVersion();
+      if (Platform.isAndroid) {
+        await _channel.invokeMethod<void>('updateEngine');
+      } else if (Platform.isWindows) {
+        final exe = File(p.join(_windowsEngines.path, 'yt-dlp.exe'));
+        if (!await exe.exists()) {
+          throw StateError(
+            'Online engine files are missing. Use the complete NOOR Windows folder.',
+          );
+        }
+        final result = await Process.run(exe.path, [
+          '--ignore-config',
+          '--encoding',
+          'utf-8',
+          '-U',
+        ], runInShell: false);
+        if (result.exitCode != 0) {
+          throw StateError('${result.stderr}${result.stdout}'.trim());
+        }
+      } else {
+        throw UnsupportedError('Online sources need Android or Windows.');
+      }
+      return (before: before, after: await engineVersion());
+    } finally {
+      engineUpdating = false;
+      _changed();
+    }
+  }
+
   Future<void> openDownloadsFolder() async {
     if (Platform.isAndroid) {
       await _channel.invokeMethod<void>('openDownloads');
@@ -922,5 +1132,29 @@ class OnlineMediaService extends ChangeNotifier {
     if (!hasTransfer) unawaited(cancel());
     unawaited(_subscription?.cancel());
     super.dispose();
+  }
+}
+
+class QueuedDownload {
+  const QueuedDownload(this.url, this.options);
+  final String url;
+  final DownloadOptions options;
+
+  Map<String, Object> toJson() => {'url': url, ...options.toMap()};
+
+  static QueuedDownload? fromJson(Map<dynamic, dynamic> json) {
+    final url = json['url'];
+    if (url is! String || !isWebUrl(url)) return null;
+    final options = DownloadOptions(
+      audioOnly: json['audioOnly'] == true,
+      maxHeight: (json['maxHeight'] as num?)?.toInt() ?? 720,
+      audioBitrate: (json['audioBitrate'] as num?)?.toInt() ?? 192,
+    );
+    try {
+      options.validate();
+    } on ArgumentError {
+      return null;
+    }
+    return QueuedDownload(url, options);
   }
 }

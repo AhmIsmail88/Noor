@@ -106,6 +106,28 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
             result.success(null);
             return;
         }
+        if (call.method.equals("engineVersion") || call.method.equals("updateEngine")) {
+            boolean update = call.method.equals("updateEngine");
+            // Only an update must exclude resolve/download; reading the version
+            // just queues on the same single worker thread.
+            if (update && !busy.compareAndSet(false, true)) {
+                result.error("busy", "Another operation is already running.", null); return;
+            }
+            worker.execute(() -> {
+                try {
+                    prepare();
+                    if (update) YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._STABLE);
+                    String version = YoutubeDL.getInstance().versionName(context);
+                    main.post(() -> result.success(version));
+                } catch (Throwable error) {
+                    String message = error.getMessage() == null ? error.toString() : error.getMessage();
+                    main.post(() -> result.error("engine", message, null));
+                } finally {
+                    if (update) busy.set(false);
+                }
+            });
+            return;
+        }
         if (!call.method.equals("resolve") && !call.method.equals("download") && !call.method.equals("publish")) {
             result.notImplemented(); return;
         }
@@ -159,6 +181,21 @@ public final class OnlineMediaBridge implements MethodChannel.MethodCallHandler,
                         }
                     }
                     output.put("http_headers", headers);
+                    // Compact format list for the quality picker (see LinkQualities).
+                    output.put("duration", data.isNull("duration") ? null : data.optDouble("duration"));
+                    java.util.List<Map<String, Object>> formats = new java.util.ArrayList<>();
+                    org.json.JSONArray list = data.optJSONArray("formats");
+                    if (list != null) for (int i = 0; i < list.length(); i++) {
+                        JSONObject f = list.optJSONObject(i);
+                        if (f == null) continue;
+                        Map<String, Object> format = new HashMap<>();
+                        for (String key : new String[]{"width", "height", "filesize", "filesize_approx", "tbr"})
+                            if (f.has(key) && !f.isNull(key)) format.put(key, f.optDouble(key));
+                        for (String key : new String[]{"vcodec", "acodec"})
+                            if (f.has(key) && !f.isNull(key)) format.put(key, f.optString(key));
+                        formats.add(format);
+                    }
+                    output.put("formats", formats);
                 } else {
                     Boolean audioValue = call.argument("audioOnly");
                     boolean audioOnly = Boolean.TRUE.equals(audioValue);

@@ -9,6 +9,8 @@ import '../../data/library_controller.dart';
 import '../../data/online_error.dart';
 import '../../data/online_media_service.dart';
 import '../../data/download_options.dart';
+import '../../data/link_qualities.dart';
+import '../../app/format.dart';
 
 import '../../app/l10n/gen/app_localizations.dart';
 
@@ -27,10 +29,97 @@ class _DownloadsPageState extends State<DownloadsPage> {
   int _height = 720;
   int _bitrate = 192;
 
+  /// What the current link really offers, after "Show available qualities".
+  LinkQualities? _qualities;
+  String? _qualitiesFor;
+
   @override
   void initState() {
     super.initState();
     unawaited(widget.online.loadHistory().catchError((Object _) {}));
+    _url.addListener(() {
+      // Another link: its qualities are unknown again.
+      if (_qualities != null && _url.text.trim() != _qualitiesFor) {
+        setState(() => _qualities = _qualitiesFor = null);
+      }
+    });
+  }
+
+  Future<void> _probe() async {
+    final l = AppLocalizations.of(context)!;
+    final source = _url.text.trim();
+    if (!isWebUrl(source)) {
+      setState(() => _validation = l.invalidLink);
+      return;
+    }
+    setState(() => _validation = null);
+    FocusScope.of(context).unfocus();
+    try {
+      final qualities = await widget.online.probe(source);
+      if (!mounted) return;
+      setState(() {
+        _qualities = qualities;
+        _qualitiesFor = source;
+        final caps = qualities.caps;
+        if (caps.isNotEmpty && !caps.containsKey(_height)) {
+          // Keep the user's cap where possible: the best one at or below it.
+          final below = caps.keys.where((c) => c > 0 && c <= _height);
+          _height = below.isEmpty ? 0 : below.reduce((a, b) => a > b ? a : b);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            qualities.caps.isEmpty ? l.noQualityList : l.qualitiesListed,
+          ),
+        ),
+      );
+    } catch (_) {
+      /* Service exposes the error. */
+    }
+  }
+
+  Future<void> _enqueue() async {
+    final l = AppLocalizations.of(context)!;
+    final source = _url.text.trim();
+    if (!isWebUrl(source)) {
+      setState(() => _validation = l.invalidLink);
+      return;
+    }
+    setState(() => _validation = null);
+    FocusScope.of(context).unfocus();
+    try {
+      await widget.online.enqueue(
+        source,
+        options: DownloadOptions(
+          audioOnly: _audioOnly,
+          maxHeight: _height,
+          audioBitrate: _bitrate,
+        ),
+      );
+      if (!mounted) return;
+      _url.clear(); // ready for the next link
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.addedToQueue)));
+    } catch (_) {
+      /* Invalid options are prevented by the form. */
+    }
+  }
+
+  String _optionsLabel(AppLocalizations l, DownloadOptions o) => o.audioOnly
+      ? 'MP3 ${o.audioBitrate} kbps'
+      : o.maxHeight == 0
+      ? l.highestQuality
+      : '${o.maxHeight}p';
+
+  String _withSize(String label, int? bytes) =>
+      bytes == null ? label : '$label · ≈ ${formatSize(bytes)}';
+
+  List<int> get _heightChoices {
+    final caps = _qualities?.caps;
+    if (caps == null || caps.isEmpty) return DownloadOptions.heights;
+    // Same order as the full list: highest first, then descending.
+    return DownloadOptions.heights.where(caps.containsKey).toList();
   }
 
   Future<void> _start(bool streaming) async {
@@ -127,7 +216,15 @@ class _DownloadsPageState extends State<DownloadsPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: online.busy ? null : _probe,
+                  icon: const Icon(Icons.tune),
+                  label: Text(l.checkQualities),
+                ),
+              ),
+              const SizedBox(height: 8),
               DropdownButtonFormField<bool>(
                 initialValue: _audioOnly,
                 decoration: InputDecoration(
@@ -153,32 +250,45 @@ class _DownloadsPageState extends State<DownloadsPage> {
                   ),
                   items: [
                     for (final rate in DownloadOptions.bitrates)
-                      DropdownMenuItem(value: rate, child: Text('$rate kbps')),
+                      DropdownMenuItem(
+                        value: rate,
+                        child: Text(
+                          _withSize('$rate kbps', _qualities?.mp3Size(rate)),
+                        ),
+                      ),
                   ],
                   onChanged: online.busy
                       ? null
                       : (value) => setState(() => _bitrate = value!),
                 )
               else
-                DropdownButtonFormField<int>(
-                  key: const ValueKey('video-quality'),
-                  initialValue: _height,
-                  decoration: InputDecoration(
-                    labelText: l.videoQuality,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: [
-                    for (final height in DownloadOptions.heights)
-                      DropdownMenuItem(
-                        value: height,
-                        child: Text(
-                          height == 0 ? l.highestQuality : '${height}p',
+                // A new quality list replaces the field, so its initial value
+                // is always one of the listed items.
+                KeyedSubtree(
+                  key: ValueKey(_qualities),
+                  child: DropdownButtonFormField<int>(
+                    key: const ValueKey('video-quality'),
+                    initialValue: _height,
+                    decoration: InputDecoration(
+                      labelText: l.videoQuality,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final height in _heightChoices)
+                        DropdownMenuItem(
+                          value: height,
+                          child: Text(
+                            _withSize(
+                              height == 0 ? l.highestQuality : '${height}p',
+                              _qualities?.caps[height],
+                            ),
+                          ),
                         ),
-                      ),
-                  ],
-                  onChanged: online.busy
-                      ? null
-                      : (value) => setState(() => _height = value!),
+                    ],
+                    onChanged: online.busy
+                        ? null
+                        : (value) => setState(() => _height = value!),
+                  ),
                 ),
               const SizedBox(height: 8),
               Text(
@@ -190,13 +300,24 @@ class _DownloadsPageState extends State<DownloadsPage> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  FilledButton.icon(
-                    onPressed: online.busy || online.hasTransfer
-                        ? null
-                        : () => _start(false),
-                    icon: const Icon(Icons.download),
-                    label: Text(_audioOnly ? l.downloadAudio : l.downloadVideo),
-                  ),
+                  // While the single transfer slot is taken, Download queues.
+                  if (online.busy ||
+                      online.hasTransfer ||
+                      online.engineUpdating ||
+                      online.startingQueued)
+                    FilledButton.icon(
+                      onPressed: _enqueue,
+                      icon: const Icon(Icons.playlist_add),
+                      label: Text(l.addToQueue),
+                    )
+                  else
+                    FilledButton.icon(
+                      onPressed: () => _start(false),
+                      icon: const Icon(Icons.download),
+                      label: Text(
+                        _audioOnly ? l.downloadAudio : l.downloadVideo,
+                      ),
+                    ),
                   OutlinedButton.icon(
                     onPressed: online.busy ? null : () => _start(true),
                     icon: const Icon(Icons.play_circle_outline),
@@ -279,6 +400,35 @@ class _DownloadsPageState extends State<DownloadsPage> {
                     ),
                   ],
                 ),
+              ],
+              if (online.queue.isNotEmpty) ...[
+                const SizedBox(height: 28),
+                Text(
+                  l.queueTitle(online.queue.length),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                if (online.canResume)
+                  Text(
+                    l.queueWaitingPaused,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                for (final item in online.queue)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.schedule),
+                    title: Text(
+                      item.url,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textDirection: TextDirection.ltr,
+                    ),
+                    subtitle: Text(_optionsLabel(l, item.options)),
+                    trailing: IconButton(
+                      tooltip: l.removeFromQueue,
+                      onPressed: () => online.removeFromQueue(item),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ),
               ],
               const SizedBox(height: 28),
               Row(

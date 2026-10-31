@@ -691,6 +691,114 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'ملفات محرك التحميل ناقصة. استخدم مجلد نور الكامل.'**
   String get errorEngine;
+
+  /// No description provided for @engineTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'محرك التحميل'**
+  String get engineTitle;
+
+  /// No description provided for @engineVersion.
+  ///
+  /// In ar, this message translates to:
+  /// **'الإصدار الحالي: {version}'**
+  String engineVersion(String version);
+
+  /// No description provided for @engineVersionUnknown.
+  ///
+  /// In ar, this message translates to:
+  /// **'الإصدار غير معروف بعد'**
+  String get engineVersionUnknown;
+
+  /// No description provided for @engineHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'المواقع تغيّر طريقتها باستمرار. إذا فشلت روابط كانت تعمل، حدّث المحرك.'**
+  String get engineHint;
+
+  /// No description provided for @engineUpdate.
+  ///
+  /// In ar, this message translates to:
+  /// **'التحقق من التحديث'**
+  String get engineUpdate;
+
+  /// No description provided for @engineUpdating.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ التحديث…'**
+  String get engineUpdating;
+
+  /// No description provided for @engineUpToDate.
+  ///
+  /// In ar, this message translates to:
+  /// **'المحرك محدّث بالفعل ({version})'**
+  String engineUpToDate(String version);
+
+  /// No description provided for @engineUpdated.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم التحديث إلى {version}'**
+  String engineUpdated(String version);
+
+  /// No description provided for @engineUpdateFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر التحديث. تأكد من الإنترنت ثم أعد المحاولة.'**
+  String get engineUpdateFailed;
+
+  /// No description provided for @engineBusy.
+  ///
+  /// In ar, this message translates to:
+  /// **'انتظر حتى ينتهي التحميل الحالي أو ألغِه أولًا.'**
+  String get engineBusy;
+
+  /// No description provided for @checkQualities.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض الجودات المتاحة'**
+  String get checkQualities;
+
+  /// No description provided for @qualitiesListed.
+  ///
+  /// In ar, this message translates to:
+  /// **'القائمة تعرض الآن جودات هذا الرابط فقط مع الحجم التقريبي.'**
+  String get qualitiesListed;
+
+  /// No description provided for @noQualityList.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الرابط لا يعرض قائمة جودات، وسيُحمَّل كما هو.'**
+  String get noQualityList;
+
+  /// No description provided for @addToQueue.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة لقائمة الانتظار'**
+  String get addToQueue;
+
+  /// No description provided for @addedToQueue.
+  ///
+  /// In ar, this message translates to:
+  /// **'أُضيف إلى قائمة الانتظار، وسيبدأ بعد التحميل الحالي.'**
+  String get addedToQueue;
+
+  /// No description provided for @queueTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'في قائمة الانتظار ({count})'**
+  String queueTitle(int count);
+
+  /// No description provided for @queueWaitingPaused.
+  ///
+  /// In ar, this message translates to:
+  /// **'تبدأ التحميلات المنتظرة بعد استكمال التحميل المتوقف أو إلغائه.'**
+  String get queueWaitingPaused;
+
+  /// No description provided for @removeFromQueue.
+  ///
+  /// In ar, this message translates to:
+  /// **'إزالة من قائمة الانتظار'**
+  String get removeFromQueue;
 }
 
 class _AppLocalizationsDelegate

@@ -136,5 +136,51 @@
   "errorQuality": "الجودة المطلوبة غير متاحة. اختر جودة أعلى أو «أعلى جودة متاحة».",
   "errorTooLarge": "الملف أكبر من الحد المسموح (2 جيجابايت).",
   "errorStorage": "لا توجد مساحة كافية لحفظ الملف.",
-  "errorEngine": "ملفات محرك التحميل ناقصة. استخدم مجلد نور الكامل."
+  "errorEngine": "ملفات محرك التحميل ناقصة. استخدم مجلد نور الكامل.",
+  "engineTitle": "محرك التحميل",
+  "engineVersion": "الإصدار الحالي: {version}",
+  "@engineVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "engineVersionUnknown": "الإصدار غير معروف بعد",
+  "engineHint": "المواقع تغيّر طريقتها باستمرار. إذا فشلت روابط كانت تعمل، حدّث المحرك.",
+  "engineUpdate": "التحقق من التحديث",
+  "engineUpdating": "جارٍ التحديث…",
+  "engineUpToDate": "المحرك محدّث بالفعل ({version})",
+  "@engineUpToDate": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "engineUpdated": "تم التحديث إلى {version}",
+  "@engineUpdated": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "engineUpdateFailed": "تعذّر التحديث. تأكد من الإنترنت ثم أعد المحاولة.",
+  "engineBusy": "انتظر حتى ينتهي التحميل الحالي أو ألغِه أولًا.",
+  "checkQualities": "عرض الجودات المتاحة",
+  "qualitiesListed": "القائمة تعرض الآن جودات هذا الرابط فقط مع الحجم التقريبي.",
+  "noQualityList": "هذا الرابط لا يعرض قائمة جودات، وسيُحمَّل كما هو.",
+  "addToQueue": "إضافة لقائمة الانتظار",
+  "addedToQueue": "أُضيف إلى قائمة الانتظار، وسيبدأ بعد التحميل الحالي.",
+  "queueTitle": "في قائمة الانتظار ({count})",
+  "@queueTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queueWaitingPaused": "تبدأ التحميلات المنتظرة بعد استكمال التحميل المتوقف أو إلغائه.",
+  "removeFromQueue": "إزالة من قائمة الانتظار"
 }

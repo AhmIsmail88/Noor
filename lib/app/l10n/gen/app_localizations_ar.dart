@@ -326,4 +326,72 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get errorEngine => 'ملفات محرك التحميل ناقصة. استخدم مجلد نور الكامل.';
+
+  @override
+  String get engineTitle => 'محرك التحميل';
+
+  @override
+  String engineVersion(String version) {
+    return 'الإصدار الحالي: $version';
+  }
+
+  @override
+  String get engineVersionUnknown => 'الإصدار غير معروف بعد';
+
+  @override
+  String get engineHint =>
+      'المواقع تغيّر طريقتها باستمرار. إذا فشلت روابط كانت تعمل، حدّث المحرك.';
+
+  @override
+  String get engineUpdate => 'التحقق من التحديث';
+
+  @override
+  String get engineUpdating => 'جارٍ التحديث…';
+
+  @override
+  String engineUpToDate(String version) {
+    return 'المحرك محدّث بالفعل ($version)';
+  }
+
+  @override
+  String engineUpdated(String version) {
+    return 'تم التحديث إلى $version';
+  }
+
+  @override
+  String get engineUpdateFailed =>
+      'تعذّر التحديث. تأكد من الإنترنت ثم أعد المحاولة.';
+
+  @override
+  String get engineBusy => 'انتظر حتى ينتهي التحميل الحالي أو ألغِه أولًا.';
+
+  @override
+  String get checkQualities => 'عرض الجودات المتاحة';
+
+  @override
+  String get qualitiesListed =>
+      'القائمة تعرض الآن جودات هذا الرابط فقط مع الحجم التقريبي.';
+
+  @override
+  String get noQualityList =>
+      'هذا الرابط لا يعرض قائمة جودات، وسيُحمَّل كما هو.';
+
+  @override
+  String get addToQueue => 'إضافة لقائمة الانتظار';
+
+  @override
+  String get addedToQueue =>
+      'أُضيف إلى قائمة الانتظار، وسيبدأ بعد التحميل الحالي.';
+
+  @override
+  String queueTitle(int count) {
+    return 'في قائمة الانتظار ($count)';
+  }
+
+  @override
+  String get queueWaitingPaused =>
+      'تبدأ التحميلات المنتظرة بعد استكمال التحميل المتوقف أو إلغائه.';
+
+  @override
+  String get removeFromQueue => 'إزالة من قائمة الانتظار';
 }

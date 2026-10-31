@@ -328,4 +328,73 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorEngine =>
       'Download engine files are missing. Use the complete NOOR folder.';
+
+  @override
+  String get engineTitle => 'Download engine';
+
+  @override
+  String engineVersion(String version) {
+    return 'Current version: $version';
+  }
+
+  @override
+  String get engineVersionUnknown => 'Version not known yet';
+
+  @override
+  String get engineHint =>
+      'Sites change often. If links that used to work start failing, update the engine.';
+
+  @override
+  String get engineUpdate => 'Check for update';
+
+  @override
+  String get engineUpdating => 'Updating…';
+
+  @override
+  String engineUpToDate(String version) {
+    return 'The engine is already up to date ($version)';
+  }
+
+  @override
+  String engineUpdated(String version) {
+    return 'Updated to $version';
+  }
+
+  @override
+  String get engineUpdateFailed =>
+      'Update failed. Check your internet connection and try again.';
+
+  @override
+  String get engineBusy =>
+      'Wait for the current download to finish, or cancel it first.';
+
+  @override
+  String get checkQualities => 'Show available qualities';
+
+  @override
+  String get qualitiesListed =>
+      'The list now shows only this link\'s qualities, with approximate sizes.';
+
+  @override
+  String get noQualityList =>
+      'This link has no quality list; it downloads as is.';
+
+  @override
+  String get addToQueue => 'Add to queue';
+
+  @override
+  String get addedToQueue =>
+      'Added to the queue; it starts after the current download.';
+
+  @override
+  String queueTitle(int count) {
+    return 'Waiting in queue ($count)';
+  }
+
+  @override
+  String get queueWaitingPaused =>
+      'Queued downloads start after the paused download is resumed or cancelled.';
+
+  @override
+  String get removeFromQueue => 'Remove from queue';
 }

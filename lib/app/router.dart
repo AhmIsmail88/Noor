@@ -49,7 +49,8 @@ GoRouter buildRouter(
           routes: [
             GoRoute(
               path: '/settings',
-              builder: (c, s) => SettingsPage(settings: settings),
+              builder: (c, s) =>
+                  SettingsPage(settings: settings, online: online),
             ),
           ],
         ),

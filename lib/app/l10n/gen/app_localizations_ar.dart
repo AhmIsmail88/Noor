@@ -198,9 +198,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get unmute => 'إلغاء الكتم';
 
   @override
-  String get volume => 'مستوى الصوت';
-
-  @override
   String get retry => 'إعادة المحاولة';
 
   @override

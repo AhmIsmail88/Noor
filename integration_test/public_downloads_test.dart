@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:noor/app/l10n/gen/app_localizations.dart';
 import 'package:noor/main.dart' as app;
 import 'package:noor/app/app.dart';
 import 'package:noor/data/library_controller.dart';
@@ -41,7 +42,9 @@ void main() {
     await app.main();
     await tester.pumpAndSettle();
     final library = tester.widget<NoorApp>(find.byType(NoorApp)).library;
-    await tester.tap(find.text('تحميل أو Streaming من رابط').first);
+    // Labels follow the app language (the phone may be set to English).
+    final l = AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
+    await tester.tap(find.text(l.onlineVideo).first);
     await tester.pumpAndSettle();
     final online = tester
         .widget<DownloadsPage>(find.byType(DownloadsPage))
@@ -60,7 +63,7 @@ void main() {
         await choose(
           tester,
           find.byType(DropdownButtonFormField<bool>),
-          'صوت فقط (MP3)',
+          l.audioOnlyMp3,
         );
         await choose(
           tester,
@@ -82,7 +85,7 @@ void main() {
       );
       FocusScope.of(tester.element(find.byType(TextField))).unfocus();
       await tester.pumpAndSettle();
-      final button = find.text(audio ? 'تحميل الصوت' : 'تحميل الفيديو');
+      final button = find.text(audio ? l.downloadAudio : l.downloadVideo);
       await tester.scrollUntilVisible(
         button,
         200,
@@ -90,7 +93,11 @@ void main() {
       );
       await tester.tap(button);
       await tester.pump();
-      for (var i = 0; i < 480 && online.busy; i++) {
+      // A Windows job is set up before it turns busy; let it start first.
+      for (var i = 0; i < 10 && !(online.busy || online.hasTransfer); i++) {
+        await tick(tester);
+      }
+      for (var i = 0; i < 480 && (online.busy || online.hasTransfer); i++) {
         await tick(tester);
       }
       // A CDN URL can expire/be refused transiently. Exercise one ordinary UI
@@ -109,7 +116,7 @@ void main() {
         );
         await tester.tap(button);
         await tester.pump();
-        for (var i = 0; i < 480 && online.busy; i++) {
+        for (var i = 0; i < 480 && (online.busy || online.hasTransfer); i++) {
           await tick(tester);
         }
       }

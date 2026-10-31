@@ -45,10 +45,7 @@ void main() {
     var position = Duration.zero;
     for (var i = 0; i < 40; i++) {
       await tick(tester);
-      final player = tester
-          .widget<Video>(find.byType(Video))
-          .controller
-          .player;
+      final player = tester.widget<Video>(find.byType(Video)).controller.player;
       position = player.state.position;
       if (player.state.playing && position > const Duration(seconds: 2)) {
         break;

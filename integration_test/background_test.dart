@@ -7,6 +7,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:noor/app/l10n/gen/app_localizations.dart';
 import 'package:noor/main.dart' as app;
 import 'package:noor/features/downloads/downloads_page.dart';
 import 'package:noor/features/player/player_page.dart';
@@ -42,7 +43,10 @@ void main() {
 
       await app.main();
       await tester.pumpAndSettle();
-      await tester.tap(find.text('تحميل أو Streaming من رابط').first);
+      final l = AppLocalizations.of(
+        tester.element(find.byType(Scaffold).first),
+      )!;
+      await tester.tap(find.text(l.onlineVideo).first);
       await tester.pumpAndSettle();
       final page = tester.widget<DownloadsPage>(find.byType(DownloadsPage));
       final online = page.online;
@@ -132,6 +136,9 @@ void main() {
           // A recoverable engine error must not detach the video texture while
           // playback continues, and retry must retain the streaming position.
           final element = tester.element(find.byType(Video));
+          // Deliberate: the only way to inject an engine error is media_kit's
+          // protected error stream.
+          // ignore: invalid_use_of_protected_member
           player.platform!.errorController.add(
             'Injected transient network error',
           );
@@ -139,7 +146,7 @@ void main() {
           expect(find.byType(Video), findsOneWidget);
           expect(tester.element(find.byType(Video)), same(element));
           final retryPosition = player.state.position;
-          await tester.tap(find.text('إعادة المحاولة'));
+          await tester.tap(find.text(l.retry));
           await until(
             () =>
                 player.state.playing && player.state.position >= retryPosition,

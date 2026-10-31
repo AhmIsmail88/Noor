@@ -197,9 +197,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unmute => 'Unmute';
 
   @override
-  String get volume => 'Volume';
-
-  @override
   String get retry => 'Retry';
 
   @override

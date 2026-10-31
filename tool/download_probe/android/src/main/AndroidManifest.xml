@@ -1,8 +1,0 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Cleartext is only used for our adb-reversed localhost video fixture. -->
-    <application android:label="NOOR Download Probe" android:extractNativeLibs="true"
-        android:usesCleartextTraffic="true" android:allowBackup="false">
-        <activity android:name=".ProbeActivity" android:exported="true" />
-    </application>
-</manifest>

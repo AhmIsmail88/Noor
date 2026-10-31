@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $noorWorkspace = Split-Path -Parent $PSScriptRoot
 $noorEngine = Join-Path $noorWorkspace "build/windows/x64/runner/$Configuration/engines"
 New-Item -ItemType Directory -Force -Path $noorEngine | Out-Null
-$noorYtVersion = '2026.10.21'
+$noorYtVersion = '2026.10.26'
 $noorNodeVersion = 'v24.19.0'
 $noorChecksums = (Invoke-WebRequest "https://github.com/yt-dlp/yt-dlp/releases/download/$noorYtVersion/SHA2-256SUMS" -TimeoutSec 60).Content
 if ($noorChecksums -is [byte[]]) { $noorChecksums = [Text.Encoding]::UTF8.GetString($noorChecksums) }
@@ -34,7 +34,7 @@ $noorFfprobe = Get-Command ffprobe.exe -ErrorAction SilentlyContinue
 if ($noorFfprobe) { Copy-Item -LiteralPath $noorFfprobe.Source -Destination (Join-Path $noorEngine 'ffprobe.exe') -Force }
 & $noorFfmpeg.Source -version | Set-Content (Join-Path $noorEngine 'FFMPEG-BUILD.txt') -Encoding utf8
 Invoke-WebRequest 'https://raw.githubusercontent.com/nodejs/node/v24.19.0/LICENSE' -OutFile (Join-Path $noorEngine 'NODE-LICENSE.txt') -TimeoutSec 60
-Invoke-WebRequest 'https://raw.githubusercontent.com/yt-dlp/yt-dlp/2026.10.21/LICENSE' -OutFile (Join-Path $noorEngine 'YT-DLP-LICENSE.txt') -TimeoutSec 60
+Invoke-WebRequest 'https://raw.githubusercontent.com/yt-dlp/yt-dlp/2026.10.26/LICENSE' -OutFile (Join-Path $noorEngine 'YT-DLP-LICENSE.txt') -TimeoutSec 60
 @"
 NOOR online engine: local test package
 yt-dlp $noorYtVersion executable: https://github.com/yt-dlp/yt-dlp/releases/tag/$noorYtVersion

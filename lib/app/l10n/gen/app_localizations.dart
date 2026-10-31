@@ -452,12 +452,6 @@ abstract class AppLocalizations {
   /// **'إلغاء الكتم'**
   String get unmute;
 
-  /// No description provided for @volume.
-  ///
-  /// In ar, this message translates to:
-  /// **'مستوى الصوت'**
-  String get volume;
-
   /// No description provided for @retry.
   ///
   /// In ar, this message translates to:

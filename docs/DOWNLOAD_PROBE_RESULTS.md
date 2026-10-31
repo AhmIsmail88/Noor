@@ -60,7 +60,8 @@ Local experiment artifacts (not committed binaries):
 Windows uses a Python venv under ignored `build/download_probe`. Android uses a
 standalone Gradle project and separate app ID `com.noor.player.downloadprobe`.
 The main NOOR app, its Gradle dependencies, and download page were not modified.
-See `tool/download_probe/README.md` for commands and dependency notes.
+The probe tool (`tool/download_probe/`) was removed on 2026-10-31 after the
+app gained its own download engine; it remains in git history before that date.
 
 The test selects an already muxed, modest-resolution format; this proves actual
 extraction and download. It does not prove separate audio/video merging or

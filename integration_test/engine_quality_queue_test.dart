@@ -37,10 +37,8 @@ void main() {
     await tester.tap(find.text(l.navSettings).last);
     await tester.pumpAndSettle();
     await waitFor(
-      () => find
-          .textContaining(l.engineVersion('').trim())
-          .evaluate()
-          .isNotEmpty,
+      () =>
+          find.textContaining(l.engineVersion('').trim()).evaluate().isNotEmpty,
       'engine version shown',
       40,
     );

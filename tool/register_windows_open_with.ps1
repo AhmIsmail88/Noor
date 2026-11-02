@@ -7,11 +7,11 @@ $noorClasses = 'HKCU:\Software\Classes'
 $noorApplication = Join-Path $noorClasses 'Applications\Noor.exe'
 New-Item -Path "$noorApplication\shell\open\command" -Force | Out-Null
 Set-Item -Path "$noorApplication\shell\open\command" -Value ('"' + $noorExe + '" "%1"')
-New-ItemProperty -Path $noorApplication -Name FriendlyAppName -Value 'NOOR' -PropertyType String -Force | Out-Null
+New-ItemProperty -Path $noorApplication -Name FriendlyAppName -Value 'Noor' -PropertyType String -Force | Out-Null
 New-Item -Path "$noorApplication\SupportedTypes" -Force | Out-Null
 $noorType = Join-Path $noorClasses 'NOOR.Media'
 New-Item -Path "$noorType\shell\open\command" -Force | Out-Null
-Set-Item -Path $noorType -Value 'NOOR media'
+Set-Item -Path $noorType -Value 'Noor media'
 Set-Item -Path "$noorType\shell\open\command" -Value ('"' + $noorExe + '" "%1"')
 New-Item -Path "$noorType\DefaultIcon" -Force | Out-Null
 Set-Item -Path "$noorType\DefaultIcon" -Value ('"' + $noorExe + '",0')

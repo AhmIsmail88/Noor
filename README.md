@@ -26,6 +26,8 @@ flutter gen-l10n
 powershell -ExecutionPolicy Bypass -File tool/setup_windows_online_engine.ps1 -Configuration Release
 flutter build windows --release
 flutter build apk --release --target-platform android-arm64
+# Windows installer (Inno Setup 6) -> dist\Noor-Setup.exe
+ISCC.exe windows\installer\noor.iss
 ```
 
 The Windows build needs `build/windows/x64/runner/<Configuration>/engines`

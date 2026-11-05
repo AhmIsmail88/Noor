@@ -34,6 +34,14 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // No R8 shrinking: youtubedl-android and commons-compress create
+            // classes by reflection, and a shrunk release failed every link
+            // that needs the engine while debug worked. Java/Kotlin code is a
+            // small part of this APK (native Python/ffmpeg dominate).
+            // proguard-rules.pro holds the rules needed if shrinking returns.
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles("proguard-rules.pro")
         }
     }
 }

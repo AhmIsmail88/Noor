@@ -124,5 +124,17 @@
   "selectAll": "Select all",
   "downloadSelected": "Download {count}",
   "playlistQueued": "Added {count} to the queue.",
-  "linkReceived": "Link received. Choose Download or Streaming."
+  "linkReceived": "Link received. Choose Download or Streaming.",
+  "removeMusic": "Remove music",
+  "musicOnly": "Music only",
+  "moreActions": "More",
+  "noMusicSuffix": "no music",
+  "musicOnlySuffix": "music only",
+  "separationPreparing": "Preparing the file…",
+  "separationSeparating": "Separating the audio… this can take several minutes",
+  "separationSaving": "Saving the new copy…",
+  "separationDone": "Ready: {title}",
+  "separationFailed": "Could not separate the audio.",
+  "separationBusy": "Wait for the current separation to finish.",
+  "separationNoAudio": "This file has no audio."
 }

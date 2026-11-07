@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/library_controller.dart';
+import '../data/music_separation.dart';
 import '../data/online_media_service.dart';
 import '../features/downloads/downloads_page.dart';
 import '../features/home/home_page.dart';
@@ -15,6 +16,7 @@ GoRouter buildRouter(
   AppSettings settings,
   LibraryController library,
   OnlineMediaService online,
+  MusicSeparationService separation,
 ) => GoRouter(
   routes: [
     StatefulShellRoute.indexedStack(
@@ -32,7 +34,8 @@ GoRouter buildRouter(
           routes: [
             GoRoute(
               path: '/library',
-              builder: (c, s) => LibraryPage(library: library),
+              builder: (c, s) =>
+                  LibraryPage(library: library, separation: separation),
             ),
           ],
         ),

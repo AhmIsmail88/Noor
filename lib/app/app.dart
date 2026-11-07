@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../data/library_controller.dart';
 import '../data/media_access.dart';
+import '../data/music_separation.dart';
 import '../data/online_media_service.dart';
 import 'l10n/gen/app_localizations.dart';
 import 'player_route.dart';
@@ -28,7 +29,13 @@ class _NoorAppState extends State<NoorApp>
   Timer? _reconcileTimer;
   bool _receivingMedia = false;
   late final _online = OnlineMediaService(widget.library);
-  late final _router = buildRouter(widget.settings, widget.library, _online);
+  late final _separation = MusicSeparationService(widget.library);
+  late final _router = buildRouter(
+    widget.settings,
+    widget.library,
+    _online,
+    _separation,
+  );
 
   @override
   void initState() {
@@ -41,6 +48,7 @@ class _NoorAppState extends State<NoorApp>
       unawaited(_incomingMedia());
       unawaited(_online.reconcileDownloads());
       unawaited(widget.library.checkFiles());
+      unawaited(_separation.checkAvailable());
     });
     _reconcileTimer = Timer.periodic(
       const Duration(seconds: 15),
@@ -129,6 +137,7 @@ class _NoorAppState extends State<NoorApp>
     unawaited(widget.settings.flush());
     _router.dispose();
     _online.dispose();
+    _separation.dispose();
     super.dispose();
   }
 

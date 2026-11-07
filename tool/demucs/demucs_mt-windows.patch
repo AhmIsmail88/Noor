@@ -1,0 +1,12 @@
+diff --git a/cli-apps/demucs_mt.cpp b/cli-apps/demucs_mt.cpp
+index 876dbd9..fcebca1 100644
+--- a/cli-apps/demucs_mt.cpp
++++ b/cli-apps/demucs_mt.cpp
+@@ -224,6 +224,6 @@ int main(int argc, const char **argv)
+             }
+         }
+ 
+-        write_audio_file(target_waveform, p_target);
++        write_audio_file(target_waveform, p_target.string()); // Windows: path is wide
+     }
+ }

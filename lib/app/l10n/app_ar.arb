@@ -211,5 +211,24 @@
       }
     }
   },
-  "linkReceived": "وصل الرابط. اختر التحميل أو المشاهدة المباشرة."
+  "linkReceived": "وصل الرابط. اختر التحميل أو المشاهدة المباشرة.",
+  "removeMusic": "إزالة الموسيقى",
+  "musicOnly": "الموسيقى فقط",
+  "moreActions": "المزيد",
+  "noMusicSuffix": "بدون موسيقى",
+  "musicOnlySuffix": "موسيقى فقط",
+  "separationPreparing": "جارٍ تجهيز الملف…",
+  "separationSeparating": "جارٍ فصل الصوت… قد يستغرق ذلك عدة دقائق",
+  "separationSaving": "جارٍ حفظ النسخة الجديدة…",
+  "separationDone": "جاهز: {title}",
+  "@separationDone": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "separationFailed": "تعذّر فصل الصوت.",
+  "separationBusy": "انتظر حتى تنتهي العملية الحالية.",
+  "separationNoAudio": "هذا الملف لا يحتوي على صوت."
 }

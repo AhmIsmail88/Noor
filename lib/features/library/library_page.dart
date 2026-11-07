@@ -4,11 +4,13 @@ import '../../app/player_route.dart';
 import '../../app/l10n/gen/app_localizations.dart';
 import '../../data/library_controller.dart';
 import '../../data/media_item.dart';
+import '../../data/music_separation.dart';
 import 'media_tile.dart';
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key, required this.library});
+  const LibraryPage({super.key, required this.library, this.separation});
   final LibraryController library;
+  final MusicSeparationService? separation;
 
   @override
   State<LibraryPage> createState() => _LibraryPageState();
@@ -37,11 +39,55 @@ class _LibraryPageState extends State<LibraryPage> {
       );
   }
 
+  /// Runs in the background (minutes); the card above the list shows it.
+  Future<void> _separate(MediaItem item, SeparationMode mode) async {
+    final service = widget.separation!;
+    final l = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    if (service.current != null) {
+      messenger.showSnackBar(SnackBar(content: Text(l.separationBusy)));
+      return;
+    }
+    final suffix = mode == SeparationMode.removeMusic
+        ? l.noMusicSuffix
+        : l.musicOnlySuffix;
+    try {
+      final result = await service.separate(
+        item,
+        mode,
+        title: '${item.title} ($suffix)',
+      );
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l.separationDone(result.title)),
+          persist: false,
+          action: SnackBarAction(
+            label: l.play,
+            onPressed: () {
+              if (mounted) context.openPlayer(result.path);
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (e is StateError && e.message == 'Cancelled') return;
+      debugPrint('Separation: $e');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            e is NoAudioError ? l.separationNoAudio : l.separationFailed,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final separation = widget.separation;
     return ListenableBuilder(
-      listenable: widget.library,
+      listenable: Listenable.merge([widget.library, ?separation]),
       builder: (context, _) {
         if (widget.library.isEmpty) {
           return Center(
@@ -61,8 +107,10 @@ class _LibraryPageState extends State<LibraryPage> {
           LibraryFilter.favorites: l.filterFavorites,
           LibraryFilter.recent: l.filterRecent,
         };
+        final job = separation?.current;
         return Column(
           children: [
+            if (job != null) _SeparationCard(service: separation!, job: job),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: TextField(
@@ -106,6 +154,9 @@ class _LibraryPageState extends State<LibraryPage> {
                           onToggleFavorite: () =>
                               widget.library.toggleFavorite(item.path),
                           onRemove: () => _remove(item),
+                          onSeparate: separation?.available == true
+                              ? (mode) => _separate(item, mode)
+                              : null,
                         );
                       },
                     ),
@@ -113,6 +164,63 @@ class _LibraryPageState extends State<LibraryPage> {
           ],
         );
       },
+    );
+  }
+}
+
+/// The running separation: file, stage, progress and Cancel.
+class _SeparationCard extends StatelessWidget {
+  const _SeparationCard({required this.service, required this.job});
+  final MusicSeparationService service;
+  final SeparationJob job;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final stage = switch (job.stage) {
+      SeparationStage.preparing => l.separationPreparing,
+      SeparationStage.separating => l.separationSeparating,
+      SeparationStage.saving => l.separationSaving,
+    };
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Row(
+          children: [
+            Icon(
+              job.mode == SeparationMode.removeMusic
+                  ? Icons.music_off_outlined
+                  : Icons.music_note_outlined,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    job.item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  Text(stage, style: theme.textTheme.bodySmall),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(value: job.progress),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('${(job.progress * 100).round()}%'),
+            IconButton(
+              tooltip: MaterialLocalizations.of(context).cancelButtonLabel,
+              onPressed: service.cancel,
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

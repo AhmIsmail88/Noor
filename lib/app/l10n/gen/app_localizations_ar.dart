@@ -424,4 +424,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get linkReceived => 'وصل الرابط. اختر التحميل أو المشاهدة المباشرة.';
+
+  @override
+  String get removeMusic => 'إزالة الموسيقى';
+
+  @override
+  String get musicOnly => 'الموسيقى فقط';
+
+  @override
+  String get moreActions => 'المزيد';
+
+  @override
+  String get noMusicSuffix => 'بدون موسيقى';
+
+  @override
+  String get musicOnlySuffix => 'موسيقى فقط';
+
+  @override
+  String get separationPreparing => 'جارٍ تجهيز الملف…';
+
+  @override
+  String get separationSeparating => 'جارٍ فصل الصوت… قد يستغرق ذلك عدة دقائق';
+
+  @override
+  String get separationSaving => 'جارٍ حفظ النسخة الجديدة…';
+
+  @override
+  String separationDone(String title) {
+    return 'جاهز: $title';
+  }
+
+  @override
+  String get separationFailed => 'تعذّر فصل الصوت.';
+
+  @override
+  String get separationBusy => 'انتظر حتى تنتهي العملية الحالية.';
+
+  @override
+  String get separationNoAudio => 'هذا الملف لا يحتوي على صوت.';
 }

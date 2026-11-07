@@ -428,4 +428,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linkReceived => 'Link received. Choose Download or Streaming.';
+
+  @override
+  String get removeMusic => 'Remove music';
+
+  @override
+  String get musicOnly => 'Music only';
+
+  @override
+  String get moreActions => 'More';
+
+  @override
+  String get noMusicSuffix => 'no music';
+
+  @override
+  String get musicOnlySuffix => 'music only';
+
+  @override
+  String get separationPreparing => 'Preparing the file…';
+
+  @override
+  String get separationSeparating =>
+      'Separating the audio… this can take several minutes';
+
+  @override
+  String get separationSaving => 'Saving the new copy…';
+
+  @override
+  String separationDone(String title) {
+    return 'Ready: $title';
+  }
+
+  @override
+  String get separationFailed => 'Could not separate the audio.';
+
+  @override
+  String get separationBusy => 'Wait for the current separation to finish.';
+
+  @override
+  String get separationNoAudio => 'This file has no audio.';
 }

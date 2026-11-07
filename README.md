@@ -15,7 +15,8 @@ Arabic and English UI.
   embedded Arabic/English subtitles; speed and time left.
 - Android: background downloads with notifications, saved to
   `Download/NOOR`; Share → Noor from other apps.
-- Windows: tray controls, single instance, "Open with Noor".
+- Windows: tray controls, single instance, "Open with Noor", and optional
+  music separation (remove music / music only, Demucs on the CPU).
 
 ## Build
 
@@ -24,6 +25,8 @@ flutter pub get
 flutter gen-l10n
 # Windows: put yt-dlp, node and ffmpeg next to the build
 powershell -ExecutionPolicy Bypass -File tool/setup_windows_online_engine.ps1 -Configuration Release
+# Windows music separation engine (see docs/MUSIC_SEPARATION.md)
+powershell -ExecutionPolicy Bypass -File tool/setup_windows_demucs.ps1 -Configuration Release
 flutter build windows --release
 flutter build apk --release --target-platform android-arm64
 # Windows installer (Inno Setup 6) -> dist\Noor-Setup.exe

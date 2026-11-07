@@ -847,6 +847,78 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'وصل الرابط. اختر التحميل أو المشاهدة المباشرة.'**
   String get linkReceived;
+
+  /// No description provided for @removeMusic.
+  ///
+  /// In ar, this message translates to:
+  /// **'إزالة الموسيقى'**
+  String get removeMusic;
+
+  /// No description provided for @musicOnly.
+  ///
+  /// In ar, this message translates to:
+  /// **'الموسيقى فقط'**
+  String get musicOnly;
+
+  /// No description provided for @moreActions.
+  ///
+  /// In ar, this message translates to:
+  /// **'المزيد'**
+  String get moreActions;
+
+  /// No description provided for @noMusicSuffix.
+  ///
+  /// In ar, this message translates to:
+  /// **'بدون موسيقى'**
+  String get noMusicSuffix;
+
+  /// No description provided for @musicOnlySuffix.
+  ///
+  /// In ar, this message translates to:
+  /// **'موسيقى فقط'**
+  String get musicOnlySuffix;
+
+  /// No description provided for @separationPreparing.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ تجهيز الملف…'**
+  String get separationPreparing;
+
+  /// No description provided for @separationSeparating.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ فصل الصوت… قد يستغرق ذلك عدة دقائق'**
+  String get separationSeparating;
+
+  /// No description provided for @separationSaving.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ حفظ النسخة الجديدة…'**
+  String get separationSaving;
+
+  /// No description provided for @separationDone.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاهز: {title}'**
+  String separationDone(String title);
+
+  /// No description provided for @separationFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر فصل الصوت.'**
+  String get separationFailed;
+
+  /// No description provided for @separationBusy.
+  ///
+  /// In ar, this message translates to:
+  /// **'انتظر حتى تنتهي العملية الحالية.'**
+  String get separationBusy;
+
+  /// No description provided for @separationNoAudio.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الملف لا يحتوي على صوت.'**
+  String get separationNoAudio;
 }
 
 class _AppLocalizationsDelegate

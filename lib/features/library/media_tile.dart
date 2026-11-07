@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/format.dart';
 import '../../app/l10n/gen/app_localizations.dart';
 import '../../data/media_item.dart';
+import '../../data/music_separation.dart';
 import 'media_thumbnail.dart';
 
 class MediaTile extends StatelessWidget {
@@ -13,6 +14,7 @@ class MediaTile extends StatelessWidget {
     this.missing = false,
     this.onToggleFavorite,
     this.onRemove,
+    this.onSeparate,
   });
 
   final MediaItem item;
@@ -22,6 +24,9 @@ class MediaTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onToggleFavorite;
   final VoidCallback? onRemove;
+
+  /// Shown as a "more" menu when the music separation engine is available.
+  final void Function(SeparationMode mode)? onSeparate;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +82,29 @@ class MediaTile extends StatelessWidget {
               tooltip: l.removeFromLibrary,
               onPressed: onRemove,
               icon: const Icon(Icons.delete_outline),
+            ),
+          if (onSeparate != null && exists)
+            PopupMenuButton<SeparationMode>(
+              tooltip: l.moreActions,
+              onSelected: onSeparate,
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: SeparationMode.removeMusic,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.music_off_outlined),
+                    title: Text(l.removeMusic),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: SeparationMode.musicOnly,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.music_note_outlined),
+                    title: Text(l.musicOnly),
+                  ),
+                ),
+              ],
             ),
         ],
       ),

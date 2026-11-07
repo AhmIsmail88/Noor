@@ -6,6 +6,36 @@ import 'package:path/path.dart' as p;
 
 import 'links.dart';
 
+/// The environment for engine processes (yt-dlp, ffmpeg, demucs): the
+/// app's own, with PATH reduced to the engines folder and Windows.
+///
+/// yt-dlp walks every PATH folder. When Noor runs with Windows'
+/// RedirectionGuard (e.g. started from the last page of a per-user Inno
+/// Setup install, which passes it on), a user PATH entry that is an NTFS
+/// junction (seen: cua-driver's bin) fails every download and stream with
+/// "WinError 448 ... untrusted mount point". The engines need nothing else
+/// from PATH: node and ffmpeg are passed by full path.
+Map<String, String> engineEnvironment(
+  String enginesDirectory, {
+  Map<String, String> source = const {},
+  Map<String, String> extra = const {},
+}) {
+  final base = source.isEmpty ? Platform.environment : source;
+  final windows =
+      base.entries
+          .where((e) => e.key.toLowerCase() == 'systemroot')
+          .map((e) => e.value)
+          .firstOrNull ??
+      r'C:\Windows';
+  return {
+    // Windows treats Path and PATH as one name; drop every spelling.
+    for (final entry in base.entries)
+      if (entry.key.toLowerCase() != 'path') entry.key: entry.value,
+    'PATH': [enginesDirectory, p.join(windows, 'System32'), windows].join(';'),
+    ...extra,
+  };
+}
+
 /// Progress parsed from the engine's output; see [parseProgressLine].
 typedef EngineProgress = ({double fraction, double? speed, Duration? eta});
 
@@ -71,6 +101,8 @@ class WindowsEngine {
     final process = await Process.start(
       executable.path,
       args,
+      environment: engineEnvironment(directory.path),
+      includeParentEnvironment: false,
       runInShell: false,
     );
     _process = process;
@@ -132,10 +164,13 @@ class WindowsEngine {
   Future<String?> version() async {
     final exe = _executable;
     if (!await exe.exists()) return null;
-    final result = await Process.run(exe.path, [
-      '--ignore-config',
-      '--version',
-    ], runInShell: false);
+    final result = await Process.run(
+      exe.path,
+      ['--ignore-config', '--version'],
+      environment: engineEnvironment(directory.path),
+      includeParentEnvironment: false,
+      runInShell: false,
+    );
     return result.exitCode == 0 ? '${result.stdout}'.trim() : null;
   }
 
@@ -143,12 +178,13 @@ class WindowsEngine {
   Future<void> update() async {
     final exe = _executable;
     if (!await exe.exists()) throw StateError(missing);
-    final result = await Process.run(exe.path, [
-      '--ignore-config',
-      '--encoding',
-      'utf-8',
-      '-U',
-    ], runInShell: false);
+    final result = await Process.run(
+      exe.path,
+      ['--ignore-config', '--encoding', 'utf-8', '-U'],
+      environment: engineEnvironment(directory.path),
+      includeParentEnvironment: false,
+      runInShell: false,
+    );
     if (result.exitCode != 0) {
       throw StateError('${result.stderr}${result.stdout}'.trim());
     }

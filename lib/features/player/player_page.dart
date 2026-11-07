@@ -17,7 +17,9 @@ import '../../app/l10n/gen/app_localizations.dart';
 import '../../app/theme.dart';
 import '../../data/library_controller.dart';
 import '../../data/media_item.dart';
+import '../../data/music_separation.dart';
 import '../../data/online_media_service.dart';
+import '../library/separation_actions.dart';
 import '../../data/video_folder.dart';
 
 class PlayerPage extends StatefulWidget {
@@ -28,6 +30,7 @@ class PlayerPage extends StatefulWidget {
     this.onlineSource,
     this.online,
     this.autoplayNext = false,
+    this.separation,
   });
   final String path;
   final LibraryController library;
@@ -36,6 +39,9 @@ class PlayerPage extends StatefulWidget {
 
   /// When playback ends, count down and open the next video.
   final bool autoplayNext;
+
+  /// Windows music separation; the button shows for local files only.
+  final MusicSeparationService? separation;
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
@@ -828,6 +834,13 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (widget.separation?.available == true &&
+                        widget.onlineSource == null &&
+                        widget.library.findByPath(widget.path) != null)
+                      SeparationButton(
+                        service: widget.separation!,
+                        item: widget.library.findByPath(widget.path)!,
+                      ),
                     _speedMenu(l),
                     ?_audioMenu(l),
                     _subtitleMenu(l),

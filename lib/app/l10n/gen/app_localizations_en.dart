@@ -467,4 +467,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get separationNoAudio => 'This file has no audio.';
+
+  @override
+  String get musicSeparation => 'Music separation';
+
+  @override
+  String get separationStarted =>
+      'Separation started. Keep watching; a message appears when it is done.';
 }

@@ -919,6 +919,18 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'هذا الملف لا يحتوي على صوت.'**
   String get separationNoAudio;
+
+  /// No description provided for @musicSeparation.
+  ///
+  /// In ar, this message translates to:
+  /// **'فصل الموسيقى'**
+  String get musicSeparation;
+
+  /// No description provided for @separationStarted.
+  ///
+  /// In ar, this message translates to:
+  /// **'بدأ فصل الصوت. كمّل المشاهدة، وهتظهر رسالة لما يخلص.'**
+  String get separationStarted;
 }
 
 class _AppLocalizationsDelegate

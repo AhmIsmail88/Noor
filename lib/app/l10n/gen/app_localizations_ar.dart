@@ -462,4 +462,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get separationNoAudio => 'هذا الملف لا يحتوي على صوت.';
+
+  @override
+  String get musicSeparation => 'فصل الموسيقى';
+
+  @override
+  String get separationStarted =>
+      'بدأ فصل الصوت. كمّل المشاهدة، وهتظهر رسالة لما يخلص.';
 }

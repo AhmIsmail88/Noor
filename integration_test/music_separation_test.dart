@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:noor/main.dart' as app;
 import 'package:noor/app/app.dart';
 import 'package:noor/app/l10n/gen/app_localizations.dart';
+import 'package:noor/app/player_route.dart';
 import 'package:noor/data/library_controller.dart';
 import 'package:noor/data/media_item.dart';
 import 'package:noor/features/library/library_page.dart';
@@ -49,32 +51,52 @@ void main() {
     expect(separation.available, isTrue, reason: 'engines\\demucs missing');
 
     var sawNoAudio = false;
-    Future<MediaItem?> run(String fixture, String action) async {
+    var sawStarted = false;
+    Future<MediaItem?> run(
+      String fixture,
+      String action, {
+      bool fromPlayer = false,
+    }) async {
       final source = library.importPath(p.join(build, fixture));
       await tester.pumpAndSettle();
       final before = library
           .query('', LibraryFilter.all)
           .map((e) => e.path)
           .toSet();
+      if (fromPlayer) {
+        // The button in the player's top bar, next to speed and subtitles.
+        final router = GoRouter.of(tester.element(find.byType(LibraryPage)));
+        openPlayerRoute(router, source.path);
+        for (var i = 0; i < 20; i++) {
+          await tick(tester);
+          if (find.byTooltip(l.musicSeparation).evaluate().isNotEmpty) break;
+        }
+        await tester.tap(find.byTooltip(l.musicSeparation));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(action).last);
+        await tester.pump();
+      }
       final row = find.byWidgetPredicate(
         (w) => w is MediaTile && w.item.path == source.path,
       );
-      await tester.scrollUntilVisible(
-        row,
-        300,
-        scrollable: find
-            .descendant(
-              of: find.byType(ListView),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.tap(
-        find.descendant(of: row, matching: find.byTooltip(l.moreActions)),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(action).last);
-      await tester.pump();
+      if (!fromPlayer) {
+        await tester.scrollUntilVisible(
+          row,
+          300,
+          scrollable: find
+              .descendant(
+                of: find.byType(ListView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.tap(
+          find.descendant(of: row, matching: find.byTooltip(l.moreActions)),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(action).last);
+        await tester.pump();
+      }
       final started = DateTime.now();
       var sawProgress = false;
       for (var i = 0; i < 600; i++) {
@@ -82,6 +104,9 @@ void main() {
         if (separation.current != null) sawProgress = true;
         if (find.text(l.separationNoAudio).evaluate().isNotEmpty) {
           sawNoAudio = true;
+        }
+        if (find.text(l.separationStarted).evaluate().isNotEmpty) {
+          sawStarted = true;
         }
         if (separation.current == null && i > 2) break;
       }
@@ -114,8 +139,16 @@ void main() {
     expect(voiceSeconds, closeTo(16, 0.5));
     debugPrint('NOOR VERIFIED remove music: ${voice.path} ${voiceSeconds}s');
 
-    // 2. Video: keep the music; the picture is copied, not re-encoded.
-    final music = (await run('separation-fixture.mkv', l.musicOnly))!;
+    // 2. Video, from the player's button: keep the music; the picture is
+    // copied, not re-encoded.
+    final music = (await run(
+      'separation-fixture.mkv',
+      l.musicOnly,
+      fromPlayer: true,
+    ))!;
+    expect(sawStarted, isTrue, reason: 'player announced the start');
+    GoRouter.of(tester.element(find.byType(Scaffold).first)).pop();
+    await tester.pumpAndSettle();
     expect(music.title, contains(l.musicOnlySuffix));
     expect(music.isAudio, isFalse);
     final streams = await probe([

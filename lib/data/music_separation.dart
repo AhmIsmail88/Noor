@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'library_controller.dart';
 import 'media_import_store.dart';
 import 'media_item.dart';
+import 'online/windows_engine.dart' show engineEnvironment;
 
 /// What to keep when separating a file's audio.
 enum SeparationMode {
@@ -260,7 +261,12 @@ class MusicSeparationService extends ChangeNotifier {
     final process = await Process.start(
       executable.path,
       args,
-      environment: environment,
+      // Minimal PATH, like the download engine (see engineEnvironment).
+      environment: engineEnvironment(
+        _engines.path,
+        extra: environment ?? const {},
+      ),
+      includeParentEnvironment: false,
       runInShell: false,
     );
     _process = process;

@@ -136,5 +136,7 @@
   "separationDone": "Ready: {title}",
   "separationFailed": "Could not separate the audio.",
   "separationBusy": "Wait for the current separation to finish.",
-  "separationNoAudio": "This file has no audio."
+  "separationNoAudio": "This file has no audio.",
+  "musicSeparation": "Music separation",
+  "separationStarted": "Separation started. Keep watching; a message appears when it is done."
 }

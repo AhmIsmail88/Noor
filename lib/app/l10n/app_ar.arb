@@ -230,5 +230,7 @@
   },
   "separationFailed": "تعذّر فصل الصوت.",
   "separationBusy": "انتظر حتى تنتهي العملية الحالية.",
-  "separationNoAudio": "هذا الملف لا يحتوي على صوت."
+  "separationNoAudio": "هذا الملف لا يحتوي على صوت.",
+  "musicSeparation": "فصل الموسيقى",
+  "separationStarted": "بدأ فصل الصوت. كمّل المشاهدة، وهتظهر رسالة لما يخلص."
 }

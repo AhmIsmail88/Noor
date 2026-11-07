@@ -15,6 +15,12 @@ VersionInfoVersion={#AppVersion}
 ; Per-user install without admin rights. Required, not only convenient: the
 ; in-app engine update (yt-dlp -U) rewrites files in {app}\engines.
 PrivilegesRequired=lowest
+; Setup enables RedirectionGuard by default, and with PrivilegesRequired=lowest
+; the app launched from the last page inherits it. yt-dlp then fails every
+; link on a PATH folder that is a junction (WinError 448). The app also runs
+; its engines with a minimal PATH (engineEnvironment), so this is a second
+; layer; the install folder is per-user.
+RedirectionGuard=no
 DefaultDirName={autopf}\Noor
 DisableProgramGroupPage=yes
 ArchitecturesAllowed=x64compatible

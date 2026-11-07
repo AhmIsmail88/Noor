@@ -75,6 +75,7 @@ GoRouter buildRouter(
                 path: source as String,
                 library: library,
                 autoplayNext: settings.autoplayNext,
+                separation: separation,
               );
       },
     ),

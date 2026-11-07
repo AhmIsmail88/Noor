@@ -6,6 +6,7 @@ import '../../data/library_controller.dart';
 import '../../data/media_item.dart';
 import '../../data/music_separation.dart';
 import 'media_tile.dart';
+import 'separation_actions.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key, required this.library, this.separation});
@@ -37,49 +38,6 @@ class _LibraryPageState extends State<LibraryPage> {
           ),
         ),
       );
-  }
-
-  /// Runs in the background (minutes); the card above the list shows it.
-  Future<void> _separate(MediaItem item, SeparationMode mode) async {
-    final service = widget.separation!;
-    final l = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
-    if (service.current != null) {
-      messenger.showSnackBar(SnackBar(content: Text(l.separationBusy)));
-      return;
-    }
-    final suffix = mode == SeparationMode.removeMusic
-        ? l.noMusicSuffix
-        : l.musicOnlySuffix;
-    try {
-      final result = await service.separate(
-        item,
-        mode,
-        title: '${item.title} ($suffix)',
-      );
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(l.separationDone(result.title)),
-          persist: false,
-          action: SnackBarAction(
-            label: l.play,
-            onPressed: () {
-              if (mounted) context.openPlayer(result.path);
-            },
-          ),
-        ),
-      );
-    } catch (e) {
-      if (e is StateError && e.message == 'Cancelled') return;
-      debugPrint('Separation: $e');
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            e is NoAudioError ? l.separationNoAudio : l.separationFailed,
-          ),
-        ),
-      );
-    }
   }
 
   @override
@@ -155,7 +113,12 @@ class _LibraryPageState extends State<LibraryPage> {
                               widget.library.toggleFavorite(item.path),
                           onRemove: () => _remove(item),
                           onSeparate: separation?.available == true
-                              ? (mode) => _separate(item, mode)
+                              ? (mode) => startSeparation(
+                                  context,
+                                  separation!,
+                                  item,
+                                  mode,
+                                )
                               : null,
                         );
                       },

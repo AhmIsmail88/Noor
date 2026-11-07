@@ -194,6 +194,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
         _openRetries <= _maxOpenRetries) {
       final fresh = _openRetries == _maxOpenRetries;
       _openRetries++;
+      debugPrint(
+        'NOOR stream refused, reopening ($_openRetries, fresh=$fresh)',
+      );
       unawaited(_reopen(refresh: fresh));
       return;
     }

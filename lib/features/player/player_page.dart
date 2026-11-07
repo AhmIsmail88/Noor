@@ -84,6 +84,11 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   bool _disposed = false;
   bool _backgroundDismissed = false;
   bool _startedOnce = false;
+  // The stream opened last, and silent reopen attempts after its CDN
+  // refused it (see _onPlaybackError).
+  ResolvedMedia? _source;
+  int _openRetries = 0;
+  static const _maxOpenRetries = 3;
   String? _nextPath;
   static const _upNextDelay = 5;
   Timer? _upNextTimer;
@@ -180,6 +185,18 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   void _onPlaybackError(String message) {
     if (_disposed) return;
     _decoderErrorTimer?.cancel();
+    // YouTube's CDN refuses a fresh stream URL with HTTP 403 on a good share
+    // of attempts, and accepts the same URL moments later. Reopen it quietly
+    // a few times, then once with a newly resolved URL, before reporting.
+    if (widget.onlineSource != null &&
+        message.contains('Failed to open') &&
+        _player.state.position == Duration.zero &&
+        _openRetries <= _maxOpenRetries) {
+      final fresh = _openRetries == _maxOpenRetries;
+      _openRetries++;
+      unawaited(_reopen(refresh: fresh));
+      return;
+    }
     // mpv reports the failed hardware probe through its error stream before
     // successfully falling back to software. Keep the video surface attached
     // during that transition; still surface a decoder failure if it stalls.
@@ -196,6 +213,21 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     } else if (mounted) {
       setState(() => _error = message);
     }
+  }
+
+  Future<void> _reopen({required bool refresh}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    // The refusal can arrive before open() returns; _start ignores calls
+    // while opening.
+    while (_opening && !_disposed) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    if (!_disposed) await _start(refresh: refresh);
+  }
+
+  void _retry() {
+    _openRetries = 0;
+    _start();
   }
 
   void _back() {
@@ -242,7 +274,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     context.openPlayer(path);
   }
 
-  Future<void> _start() async {
+  /// Opens the file or stream. A retry of a stream resolves its link again
+  /// ([refresh]), since stream URLs expire.
+  Future<void> _start({bool refresh = true}) async {
     if (_opening || _disposed) return;
     _decoderErrorTimer?.cancel();
     setState(() {
@@ -260,11 +294,12 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
         ? item.positionMs
         : 0;
     try {
-      var source = widget.onlineSource;
-      if (_startedOnce && source != null && widget.online != null) {
+      var source = _source ?? widget.onlineSource;
+      if (refresh && _startedOnce && source != null && widget.online != null) {
         source = await widget.online!.resolve(source.sourceUrl);
         if (_disposed) return;
       }
+      _source = source;
       _startedOnce = true;
       final exists =
           source != null ||
@@ -682,7 +717,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               TextButton(
-                                onPressed: _opening ? null : _start,
+                                onPressed: _opening ? null : _retry,
                                 child: Text(l.retry),
                               ),
                               IconButton(
@@ -778,7 +813,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
                     FilledButton(
                       onPressed: () {
                         setState(() => _error = null);
-                        _start();
+                        _retry();
                       },
                       child: Text(l.retry),
                     ),
